@@ -9,15 +9,17 @@ headers = {
                   'Chrome/96.0.4664.45 Safari/537.36',
 }
 
+
 def create_direction(direction):
     if not os.path.exists(direction):
         os.makedirs(direction)
+
 
 direction = 'huya/'
 create_direction(direction)
 
 
-def search_download(content, order = 'general'):
+def search_download(content, order='general'):
     """
     根据 关键词 搜索并下载
     :param content: 关键词
@@ -31,8 +33,9 @@ def search_download(content, order = 'general'):
         search_list = []
         pages = search_result.css('.pagination a')
         if pages:
-            last_page = search_result.css('.pagination a:nth-last-of-type(2)::text').get()
-            for i in range(2, int(last_page) + 1):
+            last_page = int(search_result.css('.pagination a:nth-last-of-type(2)::text').get())
+            if last_page > 30: last_page = 30
+            for i in range(2, last_page + 1):
                 search_page_url = f'{search_url}&p={i}'
                 response = requests.get(url=search_page_url, headers=headers)
                 selector = parsel.Selector(response.text)
@@ -91,7 +94,7 @@ def download_search_result(search_list):
         result = response.json()
         real_url = result['data']['moment']['videoInfo']['definitions'][0]['url']
         video_content = requests.get(url=real_url, headers=headers).content  # 获取二进制数据内容
-        with open( direction + info['videoTitle'] + ' - ' + video_number + '.mp4', mode='wb') as f:
+        with open(direction + info['videoTitle'] + ' - ' + video_number + '.mp4', mode='wb') as f:
             f.write(video_content)
             f.close()
 
@@ -104,18 +107,47 @@ def download_one(video_number):
     search_url = f'https://liveapi.huya.com/moment/getMomentContent?videoId={video_number}&_=1637824401148'
     response = requests.get(url=search_url, headers=headers)
     result = response.json()
-    real_url = result['data']['moment']['videoInfo']['definitions'][0]['url']
-    video_title = result['data']['moment']['videoInfo']['videoTitle']
-    video_content = requests.get(url=real_url, headers=headers).content  # 获取二进制数据内容
-    with open( direction + video_title + ' - ' + video_number + '.mp4', mode='wb') as f:
-        f.write(video_content)
+
+    video_info = result['data']['moment']['videoInfo']
+    video_title = video_info['videoTitle']
+    author = video_info['actorNick']
+    max_definition = video_info['definitions'][0]
+    size = int(max_definition['size']) // (1024 * 1024)
+    definition = int(max_definition['definition'])
+    if definition == 4000:
+        definition = '原画'
+    elif definition == 1300:
+        definition = '超清'
+    elif definition == 1000:
+        definition = '高清'
+    elif definition == 350:
+        definition = '流清'
+    real_url = max_definition['url']
+    print(f'{video_title} - {author}     开始下载')
+    print(f'    {definition}  -  {size} M  -  {real_url} ')
+
+    st = datetime.now()
+    real_response = requests.get(url=real_url, headers=headers)  # 获取二进制数据内容
+    et = datetime.now()
+    print(f'    下载耗时 {(et - st).seconds} 秒， {(et - st).seconds // 60} 分钟')
+    with open(direction + video_title + ' - ' + author + '.mp4' + ' - ' + definition, mode='wb') as f:
+        f.write(real_response.content)
         f.close()
-    print(f'    {video_title} 下载完成')
+    et2 = datetime.now()
+    print(f'    存储耗时 {(et2 - et).seconds} 秒')
+
 
 if __name__ == '__main__':
     # 根据 关键词 搜索并下载
     # search_download('晴小兔')
     #
     # # 根据 视频编号 下载， 如： https://v.huya.com/play/598701523.html 对应的视频编号为 598701523
-    # download_one('598701523')
-    print("{\"adList\":{\"IsNeedTime\":\"0\",\"has_scene_info\":\"0\",\"item\":[{\"clickReportUrlOther\":{\"reportitem\":[]},\"display_code\":\"Empty\",\"duration\":\"\",\"image\":[{\"height\":\"0\",\"index\":\"0\",\"url\":\"\",\"vid\":\"\",\"width\":\"0\"}],\"is_empty\":1,\"link\":\"\",\"order_id\":\"1\",\"reportUrl\":\"https://rpt.gdt.qq.com/livemsg?chid=0&r90=1&pf=in&adtype=LD&lcount=1&dft_empty=1\",\"reportUrlOther\":{\"reportitem\":[]},\"reportUrlSDK\":{\"reportitem\":[]},\"reportUrlView\":{\"reportitem\":[]},\"shareable\":\"0\",\"type\":\"LD\",\"url\":\"\"},{\"clickReportUrlOther\":{\"reportitem\":[]},\"display_code\":\"Empty\",\"duration\":\"\",\"image\":[{\"height\":\"0\",\"index\":\"0\",\"url\":\"\",\"vid\":\"\",\"width\":\"0\"}],\"is_empty\":1,\"link\":\"\",\"order_id\":\"1\",\"reportUrl\":\"https://rpt.gdt.qq.com/livemsg?chid=0&r90=1&pf=in&adtype=KB&lcount=1&dft_empty=1\",\"reportUrlOther\":{\"reportitem\":[]},\"reportUrlSDK\":{\"reportitem\":[]},\"reportUrlView\":{\"reportitem\":[]},\"shareable\":\"0\",\"type\":\"KB\",\"url\":\"\"},{\"clickReportUrlOther\":{\"reportitem\":[]},\"display_code\":\"Empty\",\"duration\":\"\",\"image\":[{\"height\":\"0\",\"index\":\"0\",\"url\":\"\",\"vid\":\"\",\"width\":\"0\"}],\"is_empty\":1,\"link\":\"\",\"order_id\":\"1\",\"reportUrl\":\"https://rpt.gdt.qq.com/livemsg?chid=0&r90=1&pf=in&adtype=PVL&lcount=1&dft_empty=1\",\"reportUrlOther\":{\"reportitem\":[]},\"reportUrlSDK\":{\"reportitem\":[]},\"reportUrlView\":{\"reportitem\":[]},\"shareable\":\"0\",\"type\":\"PVL\",\"url\":\"\"}]},\"adLoc\":{\"adFlag\":0,\"add\":0,\"aid\":\"9\",\"aidInAdtype\":[{\"adid\":\"9\",\"adtype\":\"KB\"},{\"adid\":\"9\",\"adtype\":\"LD\"},{\"adid\":\"9\",\"adtype\":\"PVL\"}],\"breakTime\":null,\"duration\":141,\"iCheckLogin\":2,\"iCheckUser\":2,\"iUserTypeReq\":2,\"iVipInfoRsp\":2,\"isvip\":1,\"mult\":null,\"oaid\":\"9\",\"rfid\":\"03981228d83410ac5c93a51419bf79f9_1637895907\",\"tm\":1637895907,\"tpid\":3,\"tvAdFreeFlag\":0,\"vad\":null,\"vid\":\"u004004zfug\"}}\n")
+    download_one('563932953')
+    # print("{\"adList\":{\"IsNeedTime\":\"0\",\"has_scene_info\":\"0\",\"item\":[{\"clickReportUrlOther\":{\"reportitem\":[]},\"display_code\":\"Empty\",\"duration\":\"\",\"image\":[{\"height\":\"0\",\"index\":\"0\",\"url\":\"\",\"vid\":\"\",\"width\":\"0\"}],\"is_empty\":1,\"link\":\"\",\"order_id\":\"1\",\"reportUrl\":\"https://rpt.gdt.qq.com/livemsg?chid=0&r90=1&pf=in&adtype=LD&lcount=1&dft_empty=1\",\"reportUrlOther\":{\"reportitem\":[]},\"reportUrlSDK\":{\"reportitem\":[]},\"reportUrlView\":{\"reportitem\":[]},\"shareable\":\"0\",\"type\":\"LD\",\"url\":\"\"},{\"clickReportUrlOther\":{\"reportitem\":[]},\"display_code\":\"Empty\",\"duration\":\"\",\"image\":[{\"height\":\"0\",\"index\":\"0\",\"url\":\"\",\"vid\":\"\",\"width\":\"0\"}],\"is_empty\":1,\"link\":\"\",\"order_id\":\"1\",\"reportUrl\":\"https://rpt.gdt.qq.com/livemsg?chid=0&r90=1&pf=in&adtype=KB&lcount=1&dft_empty=1\",\"reportUrlOther\":{\"reportitem\":[]},\"reportUrlSDK\":{\"reportitem\":[]},\"reportUrlView\":{\"reportitem\":[]},\"shareable\":\"0\",\"type\":\"KB\",\"url\":\"\"},{\"clickReportUrlOther\":{\"reportitem\":[]},\"display_code\":\"Empty\",\"duration\":\"\",\"image\":[{\"height\":\"0\",\"index\":\"0\",\"url\":\"\",\"vid\":\"\",\"width\":\"0\"}],\"is_empty\":1,\"link\":\"\",\"order_id\":\"1\",\"reportUrl\":\"https://rpt.gdt.qq.com/livemsg?chid=0&r90=1&pf=in&adtype=PVL&lcount=1&dft_empty=1\",\"reportUrlOther\":{\"reportitem\":[]},\"reportUrlSDK\":{\"reportitem\":[]},\"reportUrlView\":{\"reportitem\":[]},\"shareable\":\"0\",\"type\":\"PVL\",\"url\":\"\"}]},\"adLoc\":{\"adFlag\":0,\"add\":0,\"aid\":\"9\",\"aidInAdtype\":[{\"adid\":\"9\",\"adtype\":\"KB\"},{\"adid\":\"9\",\"adtype\":\"LD\"},{\"adid\":\"9\",\"adtype\":\"PVL\"}],\"breakTime\":null,\"duration\":141,\"iCheckLogin\":2,\"iCheckUser\":2,\"iUserTypeReq\":2,\"iVipInfoRsp\":2,\"isvip\":1,\"mult\":null,\"oaid\":\"9\",\"rfid\":\"03981228d83410ac5c93a51419bf79f9_1637895907\",\"tm\":1637895907,\"tpid\":3,\"tvAdFreeFlag\":0,\"vad\":null,\"vid\":\"u004004zfug\"}}\n")
+
+    # from _datetime import datetime
+    # t1 = datetime.now()
+    # time.sleep(3)
+    # t2 = datetime.now()
+    # print(t2 - t1)
+    # print((t2 - t1).seconds)
