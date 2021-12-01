@@ -1,5 +1,10 @@
 <template>
-
+  <div>
+    sgd
+    <h1>header</h1>
+    <h1>header</h1>
+    <h1>footer</h1>
+  </div>
 </template>
 
 <script>
