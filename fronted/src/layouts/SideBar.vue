@@ -31,8 +31,6 @@ export default {
     },
     methods: {
         handleClick(event) {
-            // console.log(event)
-            console.log(this.routes)
             this.$router.push({ name: event.key })
         }
     }

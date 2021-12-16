@@ -92,8 +92,3 @@ export default {
 }
 </script>
 
-<style scoped lang="sass">
-.ant-menu-item
-    span
-        color: #b7b3b3
-</style>
