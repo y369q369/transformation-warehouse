@@ -7,8 +7,6 @@ import 'ant-design-vue/dist/antd.css';
 import * as Icons from '@ant-design/icons-vue';
 import i18n from "./locales";
 
-// import language from "./language";
-
 import '@/style/index.scss'
 
 const app = createApp(App)

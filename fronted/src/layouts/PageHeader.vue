@@ -5,6 +5,7 @@
                 <a class="dropdown" @click.prevent>
                     <translation-outlined />
                 </a>
+
                 <template #overlay>
                     <a-menu>
                         <a-menu-item @click="changeLang('zhCn')">
@@ -16,65 +17,24 @@
                     </a-menu>
                 </template>
             </a-dropdown>
-
-<!--            <a-select-->
-<!--                v-model:value="lang"-->
-<!--                ref="select"-->
-<!--                @change="changeLang"-->
-<!--            >,-->
-<!--                <a-select-option value="zhCn">中文</a-select-option>-->
-<!--                <a-select-option value="enUS">English</a-select-option>-->
-<!--            </a-select>-->
         </a-col>
     </a-col>
 </template>
 
-<script>
+<script setup>
 import { useI18n } from 'vue-i18n'
 
-const {reactive} = require("vue");
+const { locale } = useI18n()
+const {ref} = require("vue")
 
-export default {
-    name: "PageHeader",
-    setup(){
-        const { locale } = useI18n()
-        // 获取语言
-        // let lang = locale.value
-        let lang = reactive(locale.value)
-        console.log(lang)
-        //语言切换
-        const changeLang = (value)=>{
-            //切换语言 值要对应上面index中导出的名字  要一致  第四步
-            locale.value = value
-            lang = value
-            // console.log(value)
-            // console.log(locale.value)
-            console.log(lang)
-            //缓存到localStorage中下次进来还是切换后的语言  如果不需要可以删除下面代码
-            // localStorage.setItem('lang', "cn")
-        }
-        return {
-            changeLang,
-            lang
-        }
-    },
-    data() {
-        return {
-            // lang: ''
-        }
-    },
-    methods: {
-        // changeLang(value) {
-            //切换语言 值要对应上面index中导出的名字  要一致  第四步
-            // locale.value = value
-            // lang = value
-            // console.log(value)
-            // console.log(locale.value)
-            //缓存到localStorage中下次进来还是切换后的语言  如果不需要可以删除下面代码
-            // localStorage.setItem('lang', "cn")
-        // }
-    }
+let lang = ref(locale.value)
+
+const changeLang = (value)=>{
+    //切换语言 值要对应上面index中导出的名字  要一致  第四步
+    locale.value = value
+    lang.value = value
 }
+
 </script>
 
 <style lang="sass">

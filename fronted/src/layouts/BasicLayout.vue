@@ -6,8 +6,6 @@
         <a-col class="main-container">
             <page-header></page-header>
 
-            <Test></Test>
-
             <router-view />
         </a-col>
     </a-row>
@@ -17,14 +15,12 @@
 <script>
     import SideBar from '@/layouts/SideBar'
     import PageHeader from "@/layouts/PageHeader";
-    import Test from '@/layouts/Test'
 
     export default {
         name: "BasicLayout",
         components: {
             SideBar,
             PageHeader,
-            Test
         }
     }
 </script>
