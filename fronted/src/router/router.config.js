@@ -12,7 +12,7 @@ export const basicLayout = [
                 path: '/dashboard',
                 name: 'dashboard',
                 component: () => import('@/views/dashboard/DashBoard'),
-                info:{ title: '首页', icon: 'dashboard-outlined' },
+                info:{ title: 'side.dashboard', icon: 'dashboard-outlined' },
             },
         ]
     },
@@ -21,31 +21,31 @@ export const basicLayout = [
         name: 'video',
         redirect: '/video/huYa',
         component: BasicLayout,
-        info:{ title: '视频', icon: 'video-camera-two-tone' },
+        info:{ title: 'side.video', icon: 'video-camera-two-tone' },
         children: [
             {
                 path: 'huYa',
                 name: 'huYa',
                 component: () => import('@/views/video/HuYa'),
-                info:{ title: '虎牙', icon: 'video-camera-outlined' },
+                info:{ title: 'side.huYa', icon: 'video-camera-outlined' },
             },
             {
                 path: 'iQiYi',
                 name: 'iQiYi',
                 component: () => import('@/views/video/IQiYi'),
-                info:{ title: '爱奇艺', icon: 'video-camera-outlined' },
+                info:{ title: 'side.iQiYi', icon: 'video-camera-outlined' },
             },
             {
                 path: 'tencent',
                 name: 'tencent',
                 component: () => import('@/views/video/Tencent'),
-                info:{ title: '腾讯', icon: 'video-camera-outlined' },
+                info:{ title: 'side.tencent', icon: 'video-camera-outlined' },
             },
             {
                 path: 'youKu',
                 name: 'youKu',
                 component: () => import('@/views/video/YouKu'),
-                info:{ title: '优酷', icon: 'video-camera-outlined' },
+                info:{ title: 'side.youKu', icon: 'video-camera-outlined' },
             },
         ]
     },
@@ -54,19 +54,19 @@ export const basicLayout = [
         name: 'novel',
         redirect: '/novel/biQuGe',
         component: BasicLayout,
-        info:{ title: '小说', icon: 'book-two-tone' },
+        info:{ title: 'side.novel', icon: 'book-two-tone' },
         children: [
             {
                 path: 'biQuGe',
                 name: 'biQuGe',
                 component: () => import('@/views/novel/BiQuGe'),
-                info:{ title: '笔趣阁', icon: 'book-outlined' },
+                info:{ title: 'side.biQuGe', icon: 'book-outlined' },
             },
             {
                 path: 'qiDian',
                 name: 'qiDian',
                 component: () => import('@/views/novel/QiDian'),
-                info:{ title: '起点', icon: 'book-outlined' },
+                info:{ title: 'side.qiDian', icon: 'book-outlined' },
             }
         ]
     },

@@ -1,4 +1,4 @@
-const cn = {
+const enUS = {
     side: {
         dashboard: 'dashboard',
         video: 'video',
@@ -12,4 +12,4 @@ const cn = {
     }
 }
 
-export default cn
+export default enUS

@@ -13,7 +13,7 @@ vue create front
 
 #### ant-design-vue
 
-> 官网：https://next.antdv.com/components/overview-cn/
+> 官网：https://next.antdv.com/components/overview-zhCn/
 
 > 安装：^3.0.0-alpha.14
 
@@ -72,12 +72,12 @@ yarn add vue-router@4
 	```js
 	import { createRouter, createWebHashHistory } from 'vue-router';
 	import {basicLayout} from "@/router/router.config";
-	
+
 	const router = createRouter({
 	    history: createWebHashHistory(),
 	    routes: basicLayout
 	})
-	
+
 	export default router
 	```
 
@@ -85,7 +85,7 @@ yarn add vue-router@4
 
 	```js
 	import {BasicLayout} from "@/layouts";
-	
+
 	export const basicLayout = [
 	    {
 	        path: '/',

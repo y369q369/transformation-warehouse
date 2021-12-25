@@ -1,4 +1,4 @@
-const cn = {
+const zhCn = {
     side: {
         dashboard: '首页',
         video: '视频',
@@ -12,4 +12,4 @@ const cn = {
     }
 }
 
-export default cn
+export default zhCn

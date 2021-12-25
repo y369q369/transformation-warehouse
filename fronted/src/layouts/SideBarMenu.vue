@@ -5,7 +5,7 @@
                 <template #icon>
                     <component :is="showMenu.info.icon" />
                 </template>
-                <span>{{showMenu.info.title}}</span>
+                <span>{{$t(showMenu.info.title)}}</span>
             </a-menu-item>
         </template >
 
@@ -13,7 +13,7 @@
             <template #icon>
                 <component :is="showMenu.info.icon" />
             </template>
-            <template #title>{{showMenu.info.title}}</template>
+            <template #title>{{$t(showMenu.info.title)}}</template>
             <side-bar-menu v-for="item in menuItems" :key="item.path" :menu="item"></side-bar-menu>
         </a-sub-menu>
     </template>
