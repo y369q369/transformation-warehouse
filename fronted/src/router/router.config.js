@@ -14,6 +14,12 @@ export const basicLayout = [
                 component: () => import('@/views/dashboard/DashBoard'),
                 info:{ title: 'side.dashboard', icon: 'dashboard-outlined' },
             },
+            {
+                path: 'novel',
+                name: 'novel',
+                component: () => import('@/views/novel/Novel'),
+                info:{ title: 'side.novel', icon: 'book-outlined' },
+            }
         ]
     },
     {
@@ -47,27 +53,6 @@ export const basicLayout = [
                 component: () => import('@/views/video/YouKu'),
                 info:{ title: 'side.youKu', icon: 'video-camera-outlined' },
             },
-        ]
-    },
-    {
-        path: '/novel',
-        name: 'novel',
-        redirect: '/novel/biQuGe',
-        component: BasicLayout,
-        info:{ title: 'side.novel', icon: 'book-two-tone' },
-        children: [
-            {
-                path: 'biQuGe',
-                name: 'biQuGe',
-                component: () => import('@/views/novel/BiQuGe'),
-                info:{ title: 'side.biQuGe', icon: 'book-outlined' },
-            },
-            {
-                path: 'qiDian',
-                name: 'qiDian',
-                component: () => import('@/views/novel/QiDian'),
-                info:{ title: 'side.qiDian', icon: 'book-outlined' },
-            }
         ]
     },
     {
