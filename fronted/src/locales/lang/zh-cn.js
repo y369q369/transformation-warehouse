@@ -9,6 +9,13 @@ const zhCn = {
         novel: '小说',
         biQuGe: '笔趣阁',
         qiDian: '起点'
+    },
+    placeholder: {
+        novel: '请输入小说名称'
+    },
+    website: {
+        biQuGe: '笔趣阁',
+        qiDian: '起点'
     }
 }
 

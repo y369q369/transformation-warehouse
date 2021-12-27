@@ -6,7 +6,9 @@
         <a-col class="main-container">
             <page-header></page-header>
 
-            <router-view />
+            <a-col class="body-container">
+                <router-view />
+            </a-col>
         </a-col>
     </a-row>
 
@@ -50,4 +52,11 @@
         width: calc(100% - 210px)
         min-height: 100%
         background: aliceblue
+        padding: 0 20px 20px 20px
+
+        .body-container
+            box-shadow: 0 1px 4px rgba(0, 21, 41, .08)
+            min-height: calc(100vh - 90px)
+            padding: 10px 20px
+
 </style>

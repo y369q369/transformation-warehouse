@@ -9,6 +9,13 @@ const enUS = {
         novel: 'novel',
         biQuGe: 'biQuGe',
         qiDian: 'qiDian'
+    },
+    placeholder: {
+        novel: 'please input novel'
+    },
+    website: {
+        biQuGe: 'biQuGe',
+        qiDian: 'qiDian'
     }
 }
 
