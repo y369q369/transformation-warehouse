@@ -16,6 +16,11 @@ const zhCn = {
     website: {
         biQuGe: '笔趣阁',
         qiDian: '起点'
+    },
+    tips: {
+        abnormalInterface: '接口异常',
+        unKnownError: '未知异常，请及时联系管理员',
+        noInterface: '接口不存在'
     }
 }
 

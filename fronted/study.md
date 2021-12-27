@@ -141,16 +141,15 @@ app.use(router)
 - node-sass 和 sass-loader：https://github.com/webpack-contrib/sass-loader/blob/master/CHANGELOG.md
 
 	> **node 14**
+	>
 	> "node-sass": "^4.14.1"
 	> "sass-loader": "^10.0.4"
->
-	> 
-	>
+	
 	> **node 16**
 	>
 	> "node-sass": "5.0.0",
 	> "sass-loader": "10.1.1"
-	
+
 
 安装
 

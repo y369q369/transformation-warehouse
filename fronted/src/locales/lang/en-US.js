@@ -16,6 +16,11 @@ const enUS = {
     website: {
         biQuGe: 'biQuGe',
         qiDian: 'qiDian'
+    },
+    tips: {
+        abnormalInterface: 'abnormal interface',
+        unKnownError: 'un known error, please contact the administrator',
+        noInterface: 'this interface is not exist'
     }
 }
 

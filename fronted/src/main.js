@@ -5,7 +5,7 @@ import router from "@/router";
 
 import 'ant-design-vue/dist/antd.css';
 import * as Icons from '@ant-design/icons-vue';
-import i18n from "./locales";
+import i18n from "@/locales";
 
 import '@/style/index.scss'
 

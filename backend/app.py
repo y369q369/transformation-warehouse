@@ -1,6 +1,6 @@
 from flask import Flask
-from novel.app import novel
-from viedo.app import video
+from novel.novel import novel
+from viedo.video import video
 
 app = Flask(__name__)
 # 注册蓝图
