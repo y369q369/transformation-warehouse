@@ -21,6 +21,10 @@ const zhCn = {
         abnormalInterface: '接口异常',
         unKnownError: '未知异常，请及时联系管理员',
         noInterface: '接口不存在'
+    },
+    novel: {
+        categories: '目录',
+        download: '下载'
     }
 }
 

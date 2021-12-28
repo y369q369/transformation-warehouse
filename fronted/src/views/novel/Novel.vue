@@ -19,27 +19,22 @@
         </a-col>
     </a-row>
 
-    <Seach></Seach>
+    <Search ref="childRef"></Search>
 </template>
 
 <script setup>
     import {ref} from "vue";
-    import Seach from "@/views/novel/Seach";
-    import api from "@/http/api";
-    import http from "@/http";
+    import Search from "@/views/novel/Search"
 
     let novel_source = ref('biQuGe')
     let searchContent = ref('')
-
+    const childRef = ref();
 
     // 搜索小说
     const searchNovel = ()=>{
         if (searchContent.value) {
-            http.get(api.novel.search(novel_source.value, searchContent.value)).then(response => {
-                console.log(response)
-            })
+            childRef.value.searchBook(novel_source.value, searchContent.value)
         }
-
     }
 </script>
 

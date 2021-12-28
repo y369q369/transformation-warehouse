@@ -21,6 +21,10 @@ const enUS = {
         abnormalInterface: 'abnormal interface',
         unKnownError: 'un known error, please contact the administrator',
         noInterface: 'this interface is not exist'
+    },
+    novel: {
+        categories: 'categories',
+        download: 'download'
     }
 }
 

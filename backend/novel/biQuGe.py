@@ -23,30 +23,49 @@ class BiQuGe:
         items = selector.css('.result-list .result-game-item')
 
         search_results = []
-        print('搜索结果：')
         for item in items:
             search_result = {}
+            pic_url = item.css('.result-game-item-pic .result-game-item-pic-link-img').css('::attr(src)').get()
             book_title = item.css('.result-game-item-detail .result-game-item-title a')
             book_name = book_title.css('span::text').get()
-            book_url = 'https://www.biqugee.com/' + book_title.css('::attr(href)').get()
+            book_url = 'https://www.biqugee.com' + book_title.css('::attr(href)').get()
             book_description = item.css('.result-game-item-detail .result-game-item-desc::text').get()
             book_author = item.css('.result-game-item-info p:nth-of-type(1) span:nth-of-type(2)::text').get()
-            search_result['bookName'] = book_name
-            search_result['bookAuthor'] = book_author
-            search_result['bookUrl'] = book_url
-            search_result['bookDescription'] = book_description
+            book_type = item.css('.result-game-item-info p:nth-of-type(2) span:nth-of-type(2)::text').get().replace("小说", "")
+            book_update_time = item.css('.result-game-item-info p:nth-of-type(3) span:nth-of-type(2)::text').get()
+            book_new_chapter = item.css(
+                '.result-game-item-info p:nth-of-type(4) .result-game-item-info-tag-item::text').get()
+
+            search_result['picUrl'] = pic_url
+            search_result['name'] = book_name
+            search_result['author'] = book_author
+            search_result['type'] = book_type
+            search_result['newChapter'] = book_new_chapter
+            search_result['updateTime'] = book_update_time
+            search_result['url'] = book_url
+            search_result['description'] = book_description
             search_results.append(search_result)
-
-
-            print(f'    书名 \033[0;30;43m {book_name} \033[0m')
-            print(f'    作者 {book_author}')
-            print(f'    地址 {book_url:30}   ')
-            print(f'    简介 {book_description} \n\n')
         return search_results
 
+    # 获取所有章节url
+    def catalog(self, url):
+        response = requests.get(url=url, headers=headers)
+        selector = parsel.Selector(response.text)
+        book_info = selector.css('#info')
+        book_name = book_info.css('h1::text').get()
+        chapter_list = []
+        if book_name:
+            dds = selector.css('#list dd')
+            for dd in dds:
+                chapter_name = dd.css('a::text').get()
+                chapter_url = 'https://www.biqugee.com/' + dd.css('a::attr(href)').get()
+                chapter_list.append([chapter_name, chapter_url])
+        else:
+            print(f"{url} 异常，找不到书籍")
+        return chapter_list
 
-    # # 获取所有章节url
-    # def get_catalog(url):
+        # 获取所有章节url
+    # def catalog(self, url):
     #     response = requests.get(url=url, headers=headers)
     #     selector = parsel.Selector(response.text)
     #     book_info = selector.css('#info')
@@ -66,8 +85,7 @@ class BiQuGe:
     #     else:
     #         print(f"{url} 异常，找不到书籍")
     #     return chapter_list
-    #
-    #
+
     # # 获取每章节内容并保存
     # def save_content(url):
     #     response = requests.get(url=url, headers=headers)
@@ -121,7 +139,6 @@ class BiQuGe:
     #             save_content(chapter[1])
     #             file.write('\n\n\n')
     #         file.close()
-
 
 # if __name__ == '__main__':
 #     # 搜索小说
