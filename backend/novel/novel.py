@@ -20,7 +20,7 @@ def search(source, name):
 
 @novel.route('/novel/<string:source>/catalog/<string:name>')
 def catalog(source, name):
-    if source == 'biQuGe' :
+    if source == 'biQuGe':
         return jsonify(biQuGe.catalog(name))
     elif source == 'qiDian':
         return jsonify(qiDian.catalog(name))
