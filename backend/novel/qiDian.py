@@ -48,3 +48,22 @@ class QiDian:
             search_result['description'] = book_description
             search_results.append(search_result)
         return search_results
+
+    def catalog(self, url):
+        response = requests.get(url=url + "#Catalog", headers=headers)
+        selector = parsel.Selector(response.text)
+        volumes = selector.css('.volume-wrap .volume')
+        chapter_list = []
+        index = 0
+        for volume in volumes:
+            lis = volume.css('li')
+            for li in lis:
+                chapter = {}
+                index = index + 1
+                chapter_name = li.css('a::text').get()
+                chapter_url = li.css('a::attr(href)').get()
+                chapter['index'] = index
+                chapter['name'] = chapter_name
+                chapter['url'] = chapter_url
+                chapter_list.append(chapter)
+        return chapter_list

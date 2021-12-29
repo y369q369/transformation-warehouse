@@ -33,7 +33,7 @@
 
     .side-container
         width: 210px
-        height: 100%
+        min-height: 100%
         background: #001529
 
         .ant-menu-item

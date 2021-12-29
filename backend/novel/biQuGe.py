@@ -2,6 +2,7 @@
 import requests
 import parsel
 from tqdm import tqdm
+from flask import Response, stream_with_context
 
 '''
     目标网址   ->    笔趣阁 ：https://www.biqugee.com/
@@ -31,7 +32,8 @@ class BiQuGe:
             book_url = 'https://www.biqugee.com' + book_title.css('::attr(href)').get()
             book_description = item.css('.result-game-item-detail .result-game-item-desc::text').get()
             book_author = item.css('.result-game-item-info p:nth-of-type(1) span:nth-of-type(2)::text').get()
-            book_type = item.css('.result-game-item-info p:nth-of-type(2) span:nth-of-type(2)::text').get().replace("小说", "")
+            book_type = item.css('.result-game-item-info p:nth-of-type(2) span:nth-of-type(2)::text').get().replace(
+                "小说", "")
             book_update_time = item.css('.result-game-item-info p:nth-of-type(3) span:nth-of-type(2)::text').get()
             book_new_chapter = item.css(
                 '.result-game-item-info p:nth-of-type(4) .result-game-item-info-tag-item::text').get()
@@ -56,13 +58,50 @@ class BiQuGe:
         chapter_list = []
         if book_name:
             dds = selector.css('#list dd')
+            index = 0
             for dd in dds:
+                chapter = {}
+                index = index + 1
                 chapter_name = dd.css('a::text').get()
                 chapter_url = 'https://www.biqugee.com/' + dd.css('a::attr(href)').get()
-                chapter_list.append([chapter_name, chapter_url])
-        else:
-            print(f"{url} 异常，找不到书籍")
+                chapter['index'] = index
+                chapter['name'] = chapter_name
+                chapter['url'] = chapter_url
+                chapter_list.append(chapter)
         return chapter_list
+
+    # 全本下载
+    def full_download(self, url, filename):
+        chapter_list = self.catalog(url)
+        details = ''
+        if len(chapter_list) > 0:
+            file = open(filename, 'a', encoding='utf-8')
+            for chapter in tqdm(chapter_list):
+                detail = self.get_chapter_detail(chapter)
+                file.write(detail)
+                details = details + detail
+            file.close()
+        response = Response(
+            stream_with_context(details),
+            # content_type=r.headers["content-type"],
+        )
+        # header = f'attachment; filename="{quote(obj.filename.encode())}"'
+        response.headers['Content-Disposition'] = 'attachment; filename={}'.format(filename.encode().decode('latin-1'))
+        return response
+
+    # 获取每章节内容
+    def get_chapter_detail(self, chapter):
+        response = requests.get(url=chapter['url'], headers=headers)
+        selector = parsel.Selector(response.text)
+        contents = selector.css('#content::text').getall()
+        detail = chapter['name'] + '\n'
+        for content in contents:
+            content = content.replace('\xa0\xa0\xa0\xa0', '   ')
+            detail = detail + content + '\n'
+        detail = detail + '\n\n\n'
+        return detail
+
+
 
         # 获取所有章节url
     # def catalog(self, url):

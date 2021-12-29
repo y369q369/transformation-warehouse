@@ -26,12 +26,12 @@
             </a-col>
 
             <a-col class = "operation">
-                <a-button type="primary" :title="$t('novel.categories')" @click="queryCatalog(result.url)">
+                <a-button type="primary" :title="$t('novel.categories')" @click="queryCatalog(result)">
                     <template #icon>
                         <folder-view-outlined />
                     </template>
                 </a-button>
-                <a-button type="primary" :title="$t('novel.download')" @click="download(result.url)">
+                <a-button type="primary" :title="$t('novel.download')" @click="download(result)">
                     <template #icon>
                         <DownloadOutlined />
                     </template>
@@ -45,10 +45,12 @@
     import { reactive, ref, defineExpose } from 'vue'
     import api from "@/http/api";
     import http from "@/http";
+    import { useRouter } from 'vue-router';
 
     let data = reactive({
         searchResults: []
     })
+    const router = useRouter();
 
     let bookSource = ref('')
 
@@ -65,14 +67,27 @@
     })
 
     // 查看目录
-    const queryCatalog = (url) => {
-        console.log(url)
-        this.$router.push('/novel/catalog')
+    const queryCatalog = (book) => {
+        let info = {
+            book: book,
+            source: bookSource.value
+        }
+        router.push({
+            path: '/novel/catalog',
+            query: {
+                info: window.btoa(encodeURI(JSON.stringify(info)))
+            }
+        })
     }
 
-    // 查看目录
-    const download = (url) => {
-        console.log(url)
+    // 下载
+    const download = (book) => {
+        console.log(book)
+        console.log(book.url)
+        console.log(api.novel.download(bookSource.value, book.url, book.name + ' - ' + book.author + '.txt'))
+        http.get(api.novel.download(bookSource.value, book.url, book.name + ' - ' + book.author + '.txt')).then(response => {
+            data.searchResults = response;
+        })
     }
 
 </script>
