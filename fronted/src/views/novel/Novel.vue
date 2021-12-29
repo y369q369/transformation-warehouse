@@ -11,6 +11,7 @@
         <a-col style="text-align: right; width: calc(100% - 300px)">
             <a-select
                 ref="select"
+                @change="searchNovel"
                 v-model:value="novel_source"
             >
                 <a-select-option value="biQuGe">{{ $t('website.biQuGe') }}</a-select-option>

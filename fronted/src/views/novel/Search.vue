@@ -67,6 +67,7 @@
     // 查看目录
     const queryCatalog = (url) => {
         console.log(url)
+        this.$router.push('/novel/catalog')
     }
 
     // 查看目录

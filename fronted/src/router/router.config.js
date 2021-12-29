@@ -19,6 +19,12 @@ export const basicLayout = [
                 name: 'novel',
                 component: () => import('@/views/novel/Novel'),
                 info:{ title: 'side.novel', icon: 'book-outlined' },
+            },
+            {
+                path: 'novel/catalog',
+                name: 'catalog',
+                component: () => import('@/views/novel/Catalog'),
+                info:{ hidden: true },
             }
         ]
     },
