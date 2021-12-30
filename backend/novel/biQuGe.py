@@ -1,6 +1,7 @@
 """"""
 import requests
 import parsel
+import os
 from tqdm import tqdm
 from flask import make_response, send_file, send_from_directory, Response
 
@@ -71,36 +72,19 @@ class BiQuGe:
         return chapter_list
 
     # 全本下载
-    # def full_download(self, url, filename):
-    #     chapter_list = self.catalog(url)
-    #     details = ''
-    #     if len(chapter_list) > 0:
-    #         file = open(filename, 'a', encoding='utf-8')
-    #         for chapter in tqdm(chapter_list):
-    #             detail = self.get_chapter_detail(chapter)
-    #             file.write(detail)
-    #             details = details + detail
-    #         file.close()
-    #     response = Response(
-    #         stream_with_context(details),
-    #         # content_type=r.headers["content-type"],
-    #     )
-    #     # header = f'attachment; filename="{quote(obj.filename.encode())}"'
-    #     response.headers['Content-Disposition'] = 'attachment; filename={}'.format(filename.encode().decode('latin-1'))
-    #     return response
-
     def full_download(self, url, filename):
         chapter_list = self.catalog(url)
-        # if len(chapter_list) > 0:
-        # file = open(filename, 'a', encoding='utf-8')
-        # for chapter in tqdm(chapter_list):
-        #     detail = self.get_chapter_detail(chapter)
-        #     file.write(detail)
-        # file.close()
-        response = make_response(send_file(filename))
-        response.headers["Content-Disposition"] = "attachment; filename={}".format(
-            filename.encode().decode('latin-1'))
-        return response
+        if len(chapter_list) > 0:
+            remove_novel(filename)
+            file = open(filename, 'a', encoding='utf-8')
+            for chapter in tqdm(chapter_list):
+                detail = self.get_chapter_detail(chapter)
+                file.write(detail)
+            file.close()
+            response = make_response(send_file(filename))
+            response.headers["Content-Disposition"] = "attachment; filename={}".format(
+                filename.encode().decode('latin-1'))
+            return response
 
     # 获取每章节内容
     def get_chapter_detail(self, chapter):
@@ -157,6 +141,17 @@ class BiQuGe:
         response.headers['content_type'] = 'application/octet-stream'
         response.headers['Content-Disposition'] = 'attachment; filename={}'.format(filename.encode().decode('latin-1'))
         return response
+
+
+def remove_novel(filepath):
+    #     """
+    #     移除小说
+    #     :param filepath: 待下载的文件路径
+    #     """
+    if os.path.exists(filepath):
+        os.remove(filepath)
+
+
 
         # 获取所有章节url
     # def catalog(self, url):
