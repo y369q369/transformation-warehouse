@@ -31,6 +31,7 @@ def catalog(source):
         return jsonify([])
 
 
+# 小说本地存取路径
 novel_direction = 'download/novel/'
 
 
