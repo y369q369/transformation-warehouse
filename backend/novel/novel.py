@@ -39,7 +39,10 @@ def download(source):
     url = request.args['url']
     filename = request.args['fileName']
     if source == 'biQuGe':
-        return biQuGe.full_download(url, novel_direction + filename)
+        # return biQuGe.full_download(url, novel_direction + filename)
+        # return biQuGe.file_download(novel_direction + filename, filename)
+        # return biQuGe.file_dir_download(novel_direction, filename)
+        return biQuGe.file_stream_download(novel_direction, filename)
     elif source == 'qiDian':
         qiDian.full_download(url, novel_direction + filename)
 

@@ -2,7 +2,7 @@
 import requests
 import parsel
 from tqdm import tqdm
-from flask import Response, stream_with_context
+from flask import make_response, send_file, send_from_directory, Response
 
 '''
     目标网址   ->    笔趣阁 ：https://www.biqugee.com/
@@ -71,22 +71,35 @@ class BiQuGe:
         return chapter_list
 
     # 全本下载
+    # def full_download(self, url, filename):
+    #     chapter_list = self.catalog(url)
+    #     details = ''
+    #     if len(chapter_list) > 0:
+    #         file = open(filename, 'a', encoding='utf-8')
+    #         for chapter in tqdm(chapter_list):
+    #             detail = self.get_chapter_detail(chapter)
+    #             file.write(detail)
+    #             details = details + detail
+    #         file.close()
+    #     response = Response(
+    #         stream_with_context(details),
+    #         # content_type=r.headers["content-type"],
+    #     )
+    #     # header = f'attachment; filename="{quote(obj.filename.encode())}"'
+    #     response.headers['Content-Disposition'] = 'attachment; filename={}'.format(filename.encode().decode('latin-1'))
+    #     return response
+
     def full_download(self, url, filename):
         chapter_list = self.catalog(url)
-        details = ''
-        if len(chapter_list) > 0:
-            file = open(filename, 'a', encoding='utf-8')
-            for chapter in tqdm(chapter_list):
-                detail = self.get_chapter_detail(chapter)
-                file.write(detail)
-                details = details + detail
-            file.close()
-        response = Response(
-            stream_with_context(details),
-            # content_type=r.headers["content-type"],
-        )
-        # header = f'attachment; filename="{quote(obj.filename.encode())}"'
-        response.headers['Content-Disposition'] = 'attachment; filename={}'.format(filename.encode().decode('latin-1'))
+        # if len(chapter_list) > 0:
+        # file = open(filename, 'a', encoding='utf-8')
+        # for chapter in tqdm(chapter_list):
+        #     detail = self.get_chapter_detail(chapter)
+        #     file.write(detail)
+        # file.close()
+        response = make_response(send_file(filename))
+        response.headers["Content-Disposition"] = "attachment; filename={}".format(
+            filename.encode().decode('latin-1'))
         return response
 
     # 获取每章节内容
@@ -101,7 +114,49 @@ class BiQuGe:
         detail = detail + '\n\n\n'
         return detail
 
+    def file_download(self, file, filename):
+        #     """
+        #     单个小文件下载
+        #     :param file: 待下载的文件(文件路径+文件名)
+        #     :param filename: 下载的文件名称
+        #     """
+        # 写法一
+        response = make_response(send_file(file, as_attachment=True))
+        # 写法二
+        # response = make_response(send_file(file))
+        # response.headers["Content-Disposition"] = "attachment; filename={}".format(
+        #     filename.encode().decode('latin-1'))
+        return response
 
+    def file_dir_download(self, filepath, filename):
+        #     """
+        #     基于文件夹路径和文件名下载，两种写法同 file_download
+        #     :param filepath: 待下载的文件路径
+        #     :param filename: 下载的文件名称
+        #     """
+        response = make_response(send_from_directory(filepath, filename, as_attachment=True))
+        return response
+
+    def file_stream_download(self, filepath, filename):
+        #     """
+        #     文件流式下载
+        #     :param filepath: 待下载的文件路径
+        #     :param filename: 下载的文件名称
+        #     """
+        def send_chunk():
+            # 流式读取
+            store_path = filepath + filename
+            with open(store_path, 'rb') as target_file:
+                while True:
+                    chunk = target_file.read(10 * 1024)  # 每次读取10K
+                    if not chunk:
+                        break
+                    yield chunk
+
+        response = Response(send_chunk())
+        response.headers['content_type'] = 'application/octet-stream'
+        response.headers['Content-Disposition'] = 'attachment; filename={}'.format(filename.encode().decode('latin-1'))
+        return response
 
         # 获取所有章节url
     # def catalog(self, url):
