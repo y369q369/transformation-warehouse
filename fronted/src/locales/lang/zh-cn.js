@@ -20,7 +20,9 @@ const zhCn = {
     tips: {
         abnormalInterface: '接口异常',
         unKnownError: '未知异常，请及时联系管理员',
-        noInterface: '接口不存在'
+        noInterface: '接口不存在',
+        downloadNovel: '小说下载',
+        isDownloading: '准备下载',
     },
     novel: {
         categories: '目录',

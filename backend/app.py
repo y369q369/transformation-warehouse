@@ -1,11 +1,13 @@
 from flask import Flask
 from novel.novel import novel
-from viedo.video import video
+from video.video import video
+from study.download import download
 
 app = Flask(__name__)
 # 注册蓝图
 app.register_blueprint(novel)
 app.register_blueprint(video)
+app.register_blueprint(download)
 
 
 @app.route('/')

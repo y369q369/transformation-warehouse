@@ -1,7 +1,6 @@
 """"""
 import requests
 import parsel
-from tqdm import tqdm
 
 '''
     目标网址   ->    起点中文网（阅文网）：https://www.qidian.com/
@@ -49,6 +48,7 @@ class QiDian:
             search_results.append(search_result)
         return search_results
 
+    # 获取所有章节url
     def catalog(self, url):
         response = requests.get(url=url + "#Catalog", headers=headers)
         selector = parsel.Selector(response.text)
@@ -61,9 +61,21 @@ class QiDian:
                 chapter = {}
                 index = index + 1
                 chapter_name = li.css('a::text').get()
-                chapter_url = li.css('a::attr(href)').get()
+                chapter_url = "https:" + li.css('a::attr(href)').get()
                 chapter['index'] = index
                 chapter['name'] = chapter_name
                 chapter['url'] = chapter_url
                 chapter_list.append(chapter)
         return chapter_list
+
+    # 获取每章节内容
+    def get_chapter_detail(self, chapter):
+        response = requests.get(url=chapter['url'], headers=headers)
+        selector = parsel.Selector(response.text)
+        ps = selector.css('.text-wrap .main-text-wrap .read-content p')
+        detail = chapter['name'] + '\n'
+        for p in ps:
+            content = p.css('::text').get()
+            detail = detail + content + '\n'
+        detail = detail + '\n\n\n'
+        return detail

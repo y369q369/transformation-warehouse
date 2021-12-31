@@ -4,8 +4,13 @@
             <a-image style="width: 120px; height: 150px" :src="bookInfo.book.picUrl"/>
         </a-col>
         <a-col style="padding: 0 20px; width: calc(100% - 200px); height: 180px">
-            <a-row style="font-size: 26px; font-weight: bold; height: 50px">
-                {{ bookInfo.book.name }}
+            <a-row style="font-size: 26px; font-weight: bold; height: 50px; line-height: 40px">
+                <a-col :span="18">
+                    {{ bookInfo.book.name }}
+                </a-col>
+                <a-col :span="6" style="text-align: right">
+                    <download-novel :source="bookInfo.source" :book="bookInfo.book"></download-novel>
+                </a-col>
             </a-row>
             <a-row style="height: 25px">
                 <a-col :span="12">
@@ -45,6 +50,7 @@
     import api from "@/http/api";
     import http from "@/http";
     import { useRoute } from 'vue-router';
+    import DownloadNovel from '@/views/novel/DownloadNovel';
 
     onBeforeMount(() => {
         searchCatalog()
@@ -56,7 +62,6 @@
 
     const route = useRoute();
     const bookInfo = JSON.parse(decodeURI(window.atob(route.query.info)))
-    console.log(bookInfo)
 
     const searchCatalog = () => {
         http.get(api.novel.catalog(bookInfo.source, bookInfo.book.url)).then(response => {

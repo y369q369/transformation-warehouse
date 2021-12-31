@@ -20,7 +20,9 @@ const enUS = {
     tips: {
         abnormalInterface: 'abnormal interface',
         unKnownError: 'un known error, please contact the administrator',
-        noInterface: 'this interface is not exist'
+        noInterface: 'this interface is not exist',
+        downloadNovel: 'novel download',
+        isDownloading: 'is prepared to download',
     },
     novel: {
         categories: 'categories',

@@ -26,16 +26,12 @@
             </a-col>
 
             <a-col class = "operation">
-                <a-button type="primary" :title="$t('novel.categories')" @click="queryCatalog(result)">
+                <a-button type="primary" :title="$t('novel.categories')" @click="queryCatalog(result)" size="small">
                     <template #icon>
                         <folder-view-outlined />
                     </template>
                 </a-button>
-                <a-button type="primary" :title="$t('novel.download')" @click="download(result)">
-                    <template #icon>
-                        <DownloadOutlined />
-                    </template>
-                </a-button>
+                <download-novel :source="bookSource" :book="result"></download-novel>
             </a-col>
         </a-row>
     </a-row>
@@ -46,6 +42,7 @@
     import api from "@/http/api";
     import http from "@/http";
     import { useRouter } from 'vue-router';
+    import DownloadNovel from '@/views/novel/DownloadNovel';
 
     let data = reactive({
         searchResults: []
@@ -79,17 +76,6 @@
             }
         })
     }
-
-    // 下载
-    const download = (book) => {
-        console.log(book)
-        console.log(book.url)
-        console.log(api.novel.download(bookSource.value, book.url, book.name + ' - ' + book.author + '.txt'))
-        http.get(api.novel.download(bookSource.value, book.url, book.name + ' - ' + book.author + '.txt')).then(response => {
-            data.searchResults = response;
-        })
-    }
-
 </script>
 
 <style lang="sass">
