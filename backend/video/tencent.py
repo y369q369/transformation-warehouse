@@ -1,5 +1,8 @@
 """"""
 import json
+import os
+import subprocess
+import time
 
 import requests
 import parsel
@@ -14,14 +17,60 @@ headers = {
     'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.71 Safari/537.36',
 }
 
-tencent_headers = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
-                  'Chrome/96.0.4664.45 Safari/537.36',
-    'Cookie': 'vqq_access_token=CB92B3C04AB6498E0E971BE4D8B17E62; vqq_appid=101483052; vqq_openid=2A643EEE51D87B77946C7CFE3481E097; '
-}
+# 获取当前目录绝对路径
+dir_path = os.path.dirname(os.path.abspath(__file__))
+tencent_cookie_path = "{}/../cookies/tencent_cookie.txt".format(dir_path)
+tencent_tx_path = "{}/tencent/tx.js".format(dir_path)
+tencent_ckey_path = "{}/tencent/ckey.wasm".format(dir_path)
 
 
 class Tencent:
+    main_login = 'qq'
+    access_token = 'CB92B3C04AB6498E0E971BE4D8B17E62'
+    vqq_openid = '2A643EEE51D87B77946C7CFE3481E097'
+    vqq_appid = '101483052'
+    vqq_vuserid = '424467340'
+    vusession = 'v0GwHyeRMm-RwbB9aLZCog..'
+    guid = '4583de6cef1c3803'
+
+    # def __init__(self):
+    #     self.cookie = self.auth_refresh()
+
+    # 刷新权限认证
+    def auth_refresh(self):
+        url = 'https://access.video.qq.com/user/auth_refresh'
+        params = {
+            "vappid": '11059694 ',
+            "vsecret": "fdf61a6be0aad57132bc5cdf78ac30145b6cd2c1470b0cfe",
+            "g_vstk": "212010658",  # 需注意
+            "g_actk": "838124920",
+            'type': 'qq',
+            'callback': 'jQuery1910837930383711655_1642575281941',
+            '-': '1642575281942'
+        }
+        with open(tencent_cookie_path, "r") as fp:
+            tencent_cookie = fp.read()
+        if tencent_cookie is None or tencent_cookie == '':
+            tencent_cookie = 'vqq_access_token={}; vqq_openid={}; vqq_vuserid={}; vqq_vusession={}' \
+                .format(self.access_token, self.vqq_openid, self.vqq_vuserid, self.vusession)
+        tencent_headers = {
+            "cookie": tencent_cookie,
+            "referer": "https://v.qq.com/",
+            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.71 Safari/537.36',
+        }
+        resp = requests.get(url=url, params=params, headers=tencent_headers)
+        text = resp.text
+        text_temp = re.compile("(\{.*?\})")
+        data = text_temp.findall(text)[0]
+        info = json.loads(data)
+        set_cookie = "main_login=qq; vqq_access_token={0}; vqq_appid={1}; " \
+                     "vqq_openid=2A643EEE51D87B77946C7CFE3481E097; vqq_vuserid={2}; vqq_vusession={3}; " \
+                     "vqq_next_refresh_time={4};".format(
+            info["access_token"], self.vqq_appid, info["vuserid"], info["vusession"], info["next_refresh_time"])
+        with open(tencent_cookie_path, "w", encoding="utf-8") as f:
+            f.write(set_cookie)
+        return set_cookie
+
     # 获取电视剧每集视频的编号
     def get_chapter_list(self, cover_id):
         url = 'https://v.qq.com/x/cover/{}.html'.format(cover_id)
@@ -48,7 +97,13 @@ class Tencent:
         filename = video_info['vl']['vi'][0]['fn']
         video_key_url = 'http://vv.video.qq.com/getkey?otype=json&platform=11&format=10217&appver=3.2.19.333&vid' \
                         '={}&filename={}'.format(video_id, filename)
-        video_key_response = requests.get(url=video_key_url, headers=tencent_headers)
+        full_mp4_headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
+                          'Chrome/96.0.4664.45 Safari/537.36',
+            'Cookie': 'vqq_access_token={}; vqq_appid={}; vqq_openid={}; '
+                .format(self.access_token, self.vqq_appid, self.vqq_appid)
+        }
+        video_key_response = requests.get(url=video_key_url, headers=full_mp4_headers)
         video_key = json.loads(video_key_response.content[len('QZOutputJson='):-1])
         key = video_key['key']
         video_real_url = '{}{}?vkey={}'.format(url_prefix, filename, key)
@@ -57,27 +112,46 @@ class Tencent:
         content = video_real_response.content
         print(content)
 
-    def t(self):
-        url = 'https://vd.l.qq.com/proxyhttp'
-        body = {"buid":"vinfoad","adparam":"pf=in&ad_type=LD%7CKB%7CPVL&pf_ex=pc&url=https%3A%2F%2Fv.qq.com%2Fx%2Fcover%2Fmzc0020020cyvqh%2Fo00415fhnh5.html&refer=https%3A%2F%2Fv.qq.com%2F&ty=web&plugin=1.0.0&v=3.5.57&coverid=mzc0020020cyvqh&vid=o00415fhnh5&pt=&flowid=623ad73120a1dcd1f0f0a97a86651406_10201&vptag=&pu=-1&chid=0&adaptor=2&dtype=1&live=0&resp_type=json&guid=6a86c1085fecc298fc5c2f14aa73a295&req_type=1&from=0&appversion=1.0.171&uid=424467340&tkn=S5MvfAi9cfiHThFvxjrDBw..&lt=qq&platform=10201&opid=2A643EEE51D87B77946C7CFE3481E097&atkn=CB92B3C04AB6498E0E971BE4D8B17E62&appid=101483052&tpid=2&rfid=291edee9ab286866c4933d88fc54dde5_1642489760","vinfoparam":"spsrt=1&charge=1&defaultfmt=auto&otype=ojson&guid=6a86c1085fecc298fc5c2f14aa73a295&flowid=623ad73120a1dcd1f0f0a97a86651406_10201&platform=10201&sdtfrom=v1010&defnpayver=1&appVer=3.5.57&host=v.qq.com&ehost=https%3A%2F%2Fv.qq.com%2Fx%2Fcover%2Fmzc0020020cyvqh%2Fo00415fhnh5.html&refer=v.qq.com&sphttps=1&tm=1642491449&spwm=4&logintoken=%7B%22main_login%22%3A%22qq%22%2C%22openid%22%3A%222A643EEE51D87B77946C7CFE3481E097%22%2C%22appid%22%3A%22101483052%22%2C%22access_token%22%3A%22CB92B3C04AB6498E0E971BE4D8B17E62%22%2C%22vuserid%22%3A%22424467340%22%2C%22vusession%22%3A%22S5MvfAi9cfiHThFvxjrDBw..%22%7D&vid=o00415fhnh5&defn=fhd&fhdswitch=0&show1080p=1&isHLS=1&dtype=3&sphls=2&spgzip=1&dlver=2&drm=32&hdcp=1&spau=1&spaudio=15&defsrc=2&encryptVer=9.1&cKey=JOVOW9a6AkF7xJEItZs_lpJX5WB4a2CdS8kEpbFiVaqtHEZQ1c_W6myJ8hQCnmDFHMV4E8uTbzvK2vPBr-xE-uhvZyEMY131vUh1H4pgCXe2Op8F_DerfPItmUhl5793oHwrEERQEN-fluNDEH6IC8EOljLQ2VfW2sTdospNPlD9535CNT9iSo3cLRH93ogtX_OJeYNVWrDYS8b5t1pjAAuGkoYGNScB_8lMahr0SD1lJfkplb5LtU1mpdrzcMbY1XniNzyOKljQ8AICTCwy2R1qtnIc3xhUGd_iUVDdFfA62IA6f9OFm0T6Hj92NS6XQ6XmEfIUBlrveoG1jSsl2hxBSAUFBQUFNR71zA&fp2p=1&spadseg=3"}
-        response = requests.post(url=url, json=body, headers=headers)
-        print(response.text)
-
-# 根据电视剧编号下载视频
-    # def get(self, video_id):
-    #     print(1234)
-    # https://v.qq.com/x/cover/vmpd6t5ipaw0xvr/m003318s4ru.html
-    # http://vv.video.qq.com/getinfo?otype=json&appver=3.2.19.333&platform=4100201&defnpayver=1&defn=shd&vid=m003318s4ru
-    # http://vv.video.qq.com/getkey?otype=json&platform=11&format=10201&vid=m003318s4ru&filename=r0035yqfdb9.p201.1.mp4&appver=3.2.19.333
-    # http://36.155.24.151/vlive.qqvideo.tc.qq.com/AVAWp0JMH_VzoIlhMhr4XUTeJmkki75i-LXZ-6YFiA-o/uwMROfz2r5zAoaQXGdGnC2dfKb2qtt4sTnwxCNWPphaQoC-Y/r0035yqfdb9.p201.1.mp4?vkey=060C3F582FD6807FA3D90B16A42FD178E1D6DB89F4FFB735FB7C16282A5AE311FDD2D710F470A2F7074459689F45A536BCAA20D099BFF90F37F68F3F81627F5D0BB6C9A4F17CBB32C3744A531FB07DA05706D51F2E291AE85628F22EA68541515CF2286751522AC5C3EA99F44399B919290B78621BB7949F
-    #
-    #
-    #
-    # https://v.qq.com/x/cover/mzc00200i4a0cg2.html
-    # http://vv.video.qq.com/getinfo?otype=json&appver=3.2.19.333&platform=4100201&defnpayver=1&defn=shd&vid=v0041065f7h
-    # http://vv.video.qq.com/getkey?otype=json&platform=11&format=10217&vid=v0041065f7h&filename=gzc_1000102_0b53p4absaaacyaga5wamfq4a76ddfzqahka.f10217.mp4&appver=3.2.19.333
-    # http://223.113.137.141/vlive.qqvideo.tc.qq.com/AbfR_PvX-u4gwUTY9SMyr5lJfImAxIU-NrvhtBd1HUqk/uwMROfz2r57AoaQXGdGnC2deKY1IscDfyxf57MohrStqeuf2/gzc_1000102_0b53p4absaaacyaga5wamfq4a76ddfzqahka.f10217.mp4?vkey=E1D9709D65B236F18E50D9016B24FB234F564C63A6DAD336F2E8E396D0FA0AD3AB113453AEC34B90D04927F281887868983A6EA436A277EE0184A96B67589DAD7AE6ABFEC40E7A2D5C7F1E1FA4DA70E81C9C21DC451C23E789D7AD443260E9CF24A981BC21546280CEEAFD8202E8596E4F0332F2430F50DA
 
 
-t = Tencent()
-t.t()
+
+
+
+    # 根据 ckey.wasm 获取ckey
+    def get_ckey(self, vid):
+        text = "node {} {} {} {}".format(tencent_tx_path, vid, self.guid, tencent_ckey_path)
+        p = subprocess.run(text, shell=True, stdout=subprocess.PIPE)
+        return p.stdout.decode("utf-8")
+
+
+    def get_m3u8(self, video_url, vid, ckey):
+        proxyhttp_url = 'https://vd.l.qq.com/proxyhttp'
+        vinfoparam = 'spsrt=1&charge=0&defaultfmt=auto&otype=ojson&guid=&flowid=&platform=10201&sdtfrom=v1010' \
+                     '&defnpayver=1&appVer=3.5.57&host=v.qq.com&ehost=%s&refer=v.qq.com&sphttps=1&tm=%s&spwm=4' \
+                     '&logintoken={"main_login":"%s","openid":"%s","appid":"%s","access_token":"%s","vuserid":"%s",' \
+                     '"vusession":"%s"}&unid=2798fc67442611eb89cd6c92bf48bcb2&vid=%s&defn=fhd&fhdswitch=0&show1080p=1' \
+                     '&isHLS=1&dtype=3&sphls=2&spgzip=1&dlver=2&drm=32&hdcp=0&spau=1&spaudio=15&defsrc=2&encryptVer=9' \
+                     '.1&cKey=%s&fp2p=1&spadseg=3' % (
+            video_url, str(int(time.time())), self.main_login, self.vqq_appid, self.vqq_appid, self.access_token,
+            self.vqq_vuserid, self.vusession, vid, ckey.replace("\n", "&"))
+        body = {"buid": "vinfoad",
+                "vinfoparam": vinfoparam}
+        proxyhttp_headers = {
+            "referer": "https://v.qq.com/",
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36",
+        }
+        resp = requests.post(url=proxyhttp_url, json=body, headers=proxyhttp_headers)
+        data = json.loads(resp.content.decode("utf-8"))
+        vinfo = data["vinfo"]
+        vinfo = json.loads(vinfo)
+        video = vinfo["vl"]["vi"][0]
+        title = video["ti"]
+        video_url = video["ul"]["ui"][0]["url"]  # json数据中共四个url,这里选第一个，但实测 四个基本是一样的清晰度的。 第四个无法播放！！！ 昨天都还可以，今天凉了，不知原因
+        print("解析成功 >>> 标题：{0}\tm3u8播放地址：{1}".format(title, video_url))
+        return video_url
+
+
+tencent = Tencent()
+# tencent.get_ckey('y004178oob9')
+ckey = tencent.get_ckey('y004178oob9')
+tencent.get_m3u8('https://v.qq.com/x/cover/mzc00200iyo8n07/y004178oob9.html', 'y004178oob9', ckey)
