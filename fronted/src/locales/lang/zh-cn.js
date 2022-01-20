@@ -11,7 +11,10 @@ const zhCn = {
         qiDian: '起点'
     },
     placeholder: {
-        novel: '请输入小说名称'
+        novel: '请输入小说名称',
+        tencent: {
+            search: '请输入腾讯视频地址'
+        }
     },
     website: {
         biQuGe: '笔趣阁',
@@ -27,6 +30,13 @@ const zhCn = {
     novel: {
         categories: '目录',
         download: '下载'
+    },
+    video: {
+        type: {
+            tv: '电视剧',
+            movie: '电影',
+            variety: '综艺',
+        }
     }
 }
 

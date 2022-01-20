@@ -5,10 +5,9 @@ from flask import Blueprint, request, make_response, send_file
 from backend.novel.biQuGe import BiQuGe
 from backend.novel.qiDian import QiDian
 from flask import jsonify
-import os
 
 from backend.novel.saveChapter import saveChapterThread
-from backend.utils.CommonUtil import remove_novel
+from backend.utils.CommonUtil import remove_file, create_direction, get_root_path
 
 novel = Blueprint('novel', __name__)
 biQuGe = BiQuGe()
@@ -29,7 +28,8 @@ def catalog(source):
 
 
 # 小说本地存取路径
-novel_direction = 'download/novel/'
+novel_direction = get_root_path() + '/download/novel/'
+create_direction(novel_direction)
 
 
 @novel.route('/novel/<string:source>/download')
@@ -42,7 +42,7 @@ def download(source):
     chapter_list = novel_obj.catalog(url)
     if len(chapter_list) > 0:
         filepath = novel_direction + filename
-        remove_novel(filepath)
+        remove_file(filepath)
         thread_num = ceil(len(chapter_list) / 10.0)
         threads = []
         filename_list = []
@@ -59,7 +59,7 @@ def download(source):
         for thread_filename in filename_list:
             for line in open(thread_filename, encoding='utf8'):
                 file.write(line)
-            remove_novel(thread_filename)
+            remove_file(thread_filename)
         file.close()
         response = make_response(send_file(filepath, as_attachment=True))
         end = time.time()
@@ -79,12 +79,6 @@ def download(source):
 #         qiDian.full_download(url, novel_direction + filename)
 
 
-# 创建小说下载目录
-def create_direction(direction):
-    if not os.path.exists(direction):
-        os.makedirs(direction)
-
-
 def get_source(source):
     if source == 'biQuGe':
         novel_obj = biQuGe
@@ -93,4 +87,3 @@ def get_source(source):
     return novel_obj
 
 
-create_direction(novel_direction)

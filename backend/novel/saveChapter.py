@@ -1,5 +1,5 @@
 import threading
-from backend.utils.CommonUtil import remove_novel
+from backend.utils.CommonUtil import remove_file
 
 
 class saveChapterThread(threading.Thread):
@@ -16,7 +16,7 @@ class saveChapterThread(threading.Thread):
         self.get_chapter_detail = get_chapter_detail
 
     def run(self):
-        remove_novel(self.filename)
+        remove_file(self.filename)
         file = open(self.filename, 'a', encoding='utf-8')
         for chapter in self.chapter_list:
             # for chapter in tqdm(self.chapter_list):

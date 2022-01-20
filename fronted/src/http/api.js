@@ -10,5 +10,10 @@ export default {
         download:  function(source, url, fileName) {                                    // 下载小说
             return '/api/novel/' + source + '/download?url=' + url + "&fileName=" + fileName
         }
+    },
+    video: {
+        search:  function(source, videoType, searchUrl) {                                          // 搜索小说
+            return '/api/video/' + source + '/search/' + videoType + '?url=' + searchUrl
+        },
     }
 }

@@ -11,7 +11,10 @@ const enUS = {
         qiDian: 'qiDian'
     },
     placeholder: {
-        novel: 'please input novel'
+        novel: 'please input novel',
+        tencent: {
+            search: 'please input tencent url'
+        }
     },
     website: {
         biQuGe: 'biQuGe',
@@ -27,6 +30,13 @@ const enUS = {
     novel: {
         categories: 'categories',
         download: 'download'
+    },
+    video: {
+        type: {
+            tv: 'tv',
+            movie: 'movie',
+            variety: 'variety',
+        }
     }
 }
 
