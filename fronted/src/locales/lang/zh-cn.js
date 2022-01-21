@@ -25,7 +25,10 @@ const zhCn = {
         unKnownError: '未知异常，请及时联系管理员',
         noInterface: '接口不存在',
         downloadNovel: '小说下载',
+        downloadVideo: '视频下载',
         isDownloading: '准备下载',
+        finishDownload: '准备下载',
+        failDownload: '下载失败',
     },
     novel: {
         categories: '目录',

@@ -1,15 +1,15 @@
 """"""
 import json
 import os
+import re
 import subprocess
 import time
-from pprint import pprint
-from backend.utils.CommonUtil import remove_file, create_direction, get_root_path
 
-
-import requests
 import parsel
-import re
+import requests
+from tqdm import tqdm
+
+from backend.utils.CommonUtil import remove_file, create_direction, get_root_path
 
 '''
     目标网址   ->    腾讯视频 ：https://v.qq.com/
@@ -75,29 +75,47 @@ class Tencent:
             f.write(set_cookie)
         return set_cookie
 
+    def get_url_prefix(self, url):
+        # 获取剧集前缀
+        id_str = re.findall(r"https://v.qq.com/x/cover/(.*?)\.html", url)[0]
+        if id_str.find('/') > 0:
+            cover_id = id_str[:id_str.find('/')]
+        else:
+            cover_id = id_str
+        return 'https://v.qq.com/x/cover/' + cover_id
+
     # 获取电视剧每集视频的编号
     def get_video_info(self, url):
         try:
             response = requests.get(url=url, headers=headers)
+            response.encoding = 'utf-8'
             selector = parsel.Selector(response.text)
-            # 电视剧名称
-            player_title = selector.css('.player_title a')
-            title = selector.css('.player_title a::text').get()
-            if title is not None:
-                # 电视剧列表
-                scripts = selector.css('head script')
-                video_id_list = []
-                for script in scripts:
-                    template_flag = script.css('::attr(r-notemplate)').get()
-                    script_type = script.css('::attr(type)').get()
-                    if template_flag == 'true' and script_type == 'text/javascript':
-                        cover_info = script.css('::text').get()
-                        video_id_str = re.findall(r"video_ids\":\[\"(.+?)\"\],\"vertical_pic_url", cover_info)
-                        video_id_str = re.findall(r"title\":\"(.+?)\",\"interaction_type_id", cover_info)
-                        video_id_list = video_id_str[0].split('","')
+
+            # 电视剧列表
+            scripts = selector.css('head script')
+            for script in scripts:
+                template_flag = script.css('::attr(r-notemplate)').get()
+                script_type = script.css('::attr(type)').get()
+                if template_flag == 'true' and script_type == 'text/javascript':
+                    script_content = script.css('::text').get()
+                    video_id_str = re.findall(r"var COVER_INFO = (.*?)\nvar COLUMN_INFO", script_content)
+
+            if video_id_str is not None and len(video_id_str) > 0:
+                url_prefix = self.get_url_prefix(url)
+                cover_info = json.loads(video_id_str[0])
+                video_description = cover_info['description']
+                video_pic_url = cover_info['new_pic_hz']
+                video_title = cover_info['title']
+                video_second_title = cover_info['second_title']
+                video_type = cover_info['type_name']
+                video_list = []
+                first_vid = cover_info['video_ids'][0]
+                for video_id in cover_info['video_ids']:
+                    video_list.append(url_prefix + "/" + video_id + '.html')
+
                 # 电视剧清晰度
                 video_info_url = 'http://vv.video.qq.com/getinfo?otype=json&appver=3.2.19.333&platform=4100201&defnpayver=1&defn=hd&vid' \
-                                 '={}'.format(video_id_list[0])
+                                 '={}'.format(first_vid)
                 video_info_response = requests.get(url=video_info_url, headers=headers)
                 video_info = json.loads(video_info_response.content[len('QZOutputJson='):-1])
                 fi_list = video_info['fl']['fi']
@@ -108,14 +126,19 @@ class Tencent:
                         'cname': fi['cname'],
                     })
                 tv_info = {
-                    'title': title,
-                    'video_id_list': video_id_list,
-                    'definition_list': definition_list
+                    'title': video_title,
+                    'secondTitle': video_second_title,
+                    'picUrl': video_pic_url,
+                    'description': video_description,
+                    'type': video_type,
+                    'videos': video_list,
+                    'definitions': definition_list
                 }
                 return tv_info
             else:
                 return {}
         except:
+            print('Error 解析异常')
             return {}
 
     # 获取电视剧每集视频的编号
@@ -174,10 +197,8 @@ class Tencent:
         video_key = json.loads(video_key_response.content[len('QZOutputJson='):-1])
         key = video_key['key']
         video_real_url = '{}{}?vkey={}'.format(url_prefix, filename, key)
-        print(video_real_url)
         video_real_response = requests.get(url=video_real_url, headers=headers)
         content = video_real_response.content
-        print(content)
 
     # 根据 ckey.wasm 获取ckey
     def get_ckey(self, vid):
@@ -232,27 +253,27 @@ class Tencent:
         create_direction(tv_dir)
 
         for video_url in video_url_list:
+            video_info = self.get_m3u8(video_url)
             print('{} 开始下载'.format(video_info['title']))
-            video_info = tencent.get_m3u8(video_url)
-            video_path = tv_dir + video_info['title']
+            video_path = tv_dir + '/' + video_info['title'] + '.mp4'
             remove_file(video_path)
-            video = open(video_path, 'a', encoding='utf-8')
             url_prefix_list = video_info['url_prefix_list']
             ts_list = video_info['ts_list']
-            for ts in ts_list:
-                ts_content = requests.get(url=url_prefix_list[0] + ts).content
-                video.write(ts_content)
-            video.close()
+            with open(video_path, 'ab') as video:
+                for ts in tqdm(ts_list):
+                    res = requests.get(url=url_prefix_list[0] + ts)
+                    video.write(res.content)
+                video.close()
 
     # 完整电视剧下载
     def tv_download(self, cover_id):
-        tv_info = tencent.get_chapter_list(cover_id)
+        tv_info = self.get_chapter_list(cover_id)
         video_id_list = tv_info['video_id_list']
         tv_dir = video_download_path + tv_info['title']
         os.makedirs(tv_dir)
 
         for video_id in video_id_list:
-            video_info = tencent.get_m3u8('https://v.qq.com/x/cover/{}/{}.html'.format(cover_id, video_id))
+            video_info = self.get_m3u8('https://v.qq.com/x/cover/{}/{}.html'.format(cover_id, video_id))
             video = open(tv_dir + '/' + video_info['title'], 'a', encoding='utf-8')
             url_prefix_list = video_info['url_prefix_list']
             ts_list = video_info['ts_list']
@@ -261,7 +282,3 @@ class Tencent:
                 video.write(ts_content)
             video.close()
 
-
-tencent = Tencent()
-tencent.get_chapter_list('mzc00200iyo8n07')
-# tencent.get_m3u8('https://v.qq.com/x/cover/mzc00200iyo8n07/y004178oob9.html')

@@ -12,8 +12,11 @@ export default {
         }
     },
     video: {
-        search:  function(source, videoType, searchUrl) {                                          // 搜索小说
+        search:  function(source, videoType, searchUrl) {                               // 搜索视频信息
             return '/api/video/' + source + '/search/' + videoType + '?url=' + searchUrl
         },
+        download:  function(source, videoType) {                                        // 下载视频
+            return '/api/video/' + source + '/download/' + videoType
+        }
     }
 }

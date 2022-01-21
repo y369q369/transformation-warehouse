@@ -35,3 +35,28 @@ body .el-notification {
   word-wrap: break-word;
   word-break: break-all;
 }
+
+.title {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+
+.info {
+    font-size: 12px;
+    color: #a6a6a6;
+}
+
+.intro {
+    font-size: 14px;
+    line-height: 24px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    height: 72px;
+    margin-bottom: 8px;
+    color: #666;
+}
+

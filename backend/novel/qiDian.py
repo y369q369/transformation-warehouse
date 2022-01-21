@@ -16,7 +16,7 @@ headers = {
 class QiDian:
     # 搜索书籍
     def search(self, name):
-        search_url = f"https://www.qidian.com/search?kw={name}"
+        search_url = f"https://www.qidian.com/soushu/{name}.html"
         response = requests.get(url=search_url, headers=headers)
         selector = parsel.Selector(response.text)
         lis = selector.css('.book-img-text li')
@@ -25,10 +25,10 @@ class QiDian:
         for li in lis:
             search_result = {}
             pic_url = "https:" + li.css('.book-img-box img::attr(src)').get()
-            book_name_html = li.css('.book-mid-info h4 a').get()
+            book_name_html = li.css('.book-mid-info .book-info-title a').get()
             book_name_html = book_name_html.replace('<cite class="red-kw">', "").replace('</cite>', "")
             book_name = book_name_html[book_name_html.find(">") + 1:book_name_html.find("<", 2)]
-            book_url = "https:" + li.css('.book-mid-info h4 a::attr(href)').get()
+            book_url = "https:" + li.css('.book-mid-info .book-info-title a::attr(href)').get()
             book_description = li.css('.book-mid-info .intro::text').get()
             book_author = li.css('.book-mid-info .author a:nth-of-type(1)::text').get()
             book_type = li.css('.book-mid-info .author a:nth-of-type(2)::text').get()

@@ -25,7 +25,10 @@ const enUS = {
         unKnownError: 'un known error, please contact the administrator',
         noInterface: 'this interface is not exist',
         downloadNovel: 'novel download',
+        downloadVideo: 'video download',
         isDownloading: 'is prepared to download',
+        finishDownload: 'finish to download',
+        failDownload: 'fail to download',
     },
     novel: {
         categories: 'categories',
