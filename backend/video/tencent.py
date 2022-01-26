@@ -34,8 +34,8 @@ class Tencent:
     vqq_openid = '2A643EEE51D87B77946C7CFE3481E097'
     vqq_appid = '101483052'
     vqq_vuserid = '424467340'
-    vusession = 'v0GwHyeRMm-RwbB9aLZCog..'
-    guid = '4583de6cef1c3803'
+    vusession = 'qKyOo4YqqJ-LzPaU7HCN2A..'
+    guid = '6a4a6faaf0becf989d066e8aa8145c6c'
 
     # def __init__(self):
     #     self.cookie = self.auth_refresh()
@@ -238,8 +238,10 @@ class Tencent:
         for m3u8_li in video["ul"]["ui"]:
             m3u8_url = m3u8_li['url']
             url_prefix_list.append(m3u8_url[:m3u8_url.rfind('/') + 1])
-        # 每段视频地址
-        ts_list = re.findall("#EXTINF:\d+\.\d+,\\n(.*?)\\n", video['ul']['m3u8'])
+        # 每段视频地址（老版本的视频无 url.m3u8 ， 故通过请求链接地址获取所有m3u8片段地址）
+        m3u8_response = requests.get(url=m3u8_url, headers=headers)
+        m3u8_str = m3u8_response.text
+        ts_list = re.findall("#EXTINF:\d+\.\d+,\\n(.*?)\\n", m3u8_str)
         video_info = {
             'title': title,
             'url_prefix_list': url_prefix_list,
@@ -261,8 +263,17 @@ class Tencent:
             ts_list = video_info['ts_list']
             with open(video_path, 'ab') as video:
                 for ts in tqdm(ts_list):
-                    res = requests.get(url=url_prefix_list[0] + ts)
-                    video.write(res.content)
+                    try:
+                        res = requests.get(url=url_prefix_list[0] + ts, timeout=3)
+                        video.write(res.content)
+                        time.sleep(0.5)
+                    except:
+                        video_info = self.get_m3u8(video_url)
+                        url_prefix_list = video_info['url_prefix_list']
+
+                        print(url_prefix_list[0] + ts)
+                        res = requests.get(url=url_prefix_list[0] + ts, timeout=3)
+                        video.write(res.content)
                 video.close()
 
     # 完整电视剧下载

@@ -1,11 +1,9 @@
 <template>
-    <h1>虎牙</h1>
+    <svg-icon icon-class="invert-selection"></svg-icon>
 </template>
 
-<script>
-export default {
-    name: "HuYa"
-}
+<script setup>
+
 </script>
 
 <style scoped>

@@ -21,21 +21,17 @@
         </a-col>
     </a-row>
 
-    <a-row style = "height: 190px; border: 1px solid rgb(136, 198, 229)" v-show="data.info.title != ''">
-        <a-col style="width: 150px; height: 180px; padding: 15px; background-color: #f8f5f5;">
-            <a-image style="width: 120px; height: 150px" :src="data.info.picUrl"/>
+    <a-row style = "height: 235px; margin-bottom: 20px; border: 1px solid rgb(136, 198, 229)" v-show="data.info.title != ''">
+        <a-col style="width: 170px; height: 230px; padding: 10px; background-color: #f8f5f5;">
+            <a-image style="width: 150px; height: 210px" :src="data.info.picUrl"/>
         </a-col>
-        <a-col style="padding: 0 20px; width: calc(100% - 200px); height: 180px; line-height: 32px">
+        <a-col style="padding: 0 20px; width: calc(99% - 170px); height: 180px; line-height: 32px">
             <a-row class="title" style="padding-top: 20px; ">
                 <a-col :span="18">
                     {{data.info.title}}
                 </a-col>
                 <a-col :span="6" style="text-align: right">
-                    <a-button type="primary" :title="$t('novel.download')" @click="download()" size="small">
-                        <template #icon>
-                            <DownloadOutlined />
-                        </template>
-                    </a-button>
+                    <Download type="video" source="tencent" :name="data.info.title" :urls="data.chooseItems"></Download>
                 </a-col>
             </a-row>
             <a-col class="info">
@@ -49,19 +45,15 @@
         </a-col>
     </a-row>
 
-    <a-row style = "margin-top: 20px; border: 1px solid rgb(136, 198, 229)" v-show="data.info.title != ''">
-        <a-col :span="4" v-for="(video, index) in data.info.videos" :key="index" class="column">
-            <a :href="video" target="_blank">{{ index + 1 }}</a>
-        </a-col>
-    </a-row>
+    <multiple-choice :show-items="data.info.videos" @chooseItems="handleChoose" ref="multipleChoiceRef"></multiple-choice>
 </template>
 
 <script setup>
 import {ref, reactive} from "vue";
 import api from "@/http/api";
 import http from "@/http";
-import {notification} from "ant-design-vue";
-import i18n from "@/locales";
+import MultipleChoice from "@/components/MultipleChoice";
+import Download from '@/components/Download'
 
 let videoType = ref('tv')
 let searchUrl = ref('')
@@ -73,10 +65,13 @@ let data = reactive({
         picUrl: '',
         description: '',
         type: '',
-        videos: '',
+        videos: [],
         definitions: ''
-    }
+    },
+    chooseItems: []
 })
+
+const multipleChoiceRef = ref();
 
 // 搜索视频
 const searchSource = ()=>{
@@ -87,24 +82,8 @@ const searchSource = ()=>{
     }
 }
 
-const download = ()=>{
-    let req = {
-        name: data.info.title,
-        urls: [data.info.videos]
-    }
-    http.post(api.video.download('tencent', videoType.value), {}, req).then(response => {
-        let type = 'error'
-        let status = i18n.global.t('tips.failDownload')
-        if (response.code === 0) {
-            type = 'info'
-            status = i18n.global.t('tips.finishDownload')
-        }
-        notification[type]({
-            message: i18n.global.t('tips.downloadVideo'),
-            description: req.name + "  " + status,
-            duration: 5
-        })
-    })
+const handleChoose =(chooseItems) => {
+    data.chooseItems = chooseItems
 }
 
 </script>
