@@ -91,46 +91,52 @@ class Tencent:
             response = requests.get(url=url, headers=headers)
             selector = parsel.Selector(response.text)
 
-            pinia_str = selector.re('<script>window.__pinia=(.*)</script>')
-            pinia = json.loads(pinia_str[0].replace('undefined', '""'))
-            cover_info = pinia['global']['coverInfo']
-            video_description = cover_info['description']
-            video_pic_url = cover_info['new_pic_hz']
-            video_title = cover_info['title']
-            video_second_title = cover_info['second_title']
-            video_type = cover_info['type_name']
-            video_list = []
-            first_vid = cover_info['video_ids'][0]
-            url_prefix = self.get_url_prefix(url)
-            for item in pinia['episodeMain']['listData'][0]:
-                video_list.append({
-                    'title': item['item_params']['c_title_output'],
-                    'imageUrl': item['item_params']['image_url'],
-                    'url': url_prefix + "/" + item['item_params']['vid'] + '.html'
-                })
+            # 电视剧列表
+            scripts = selector.css('head script')
+            for script in scripts:
+                template_flag = script.css('::attr(r-notemplate)').get()
+                script_type = script.css('::attr(type)').get()
+                if template_flag == 'true' and script_type == 'text/javascript':
+                    script_content = script.css('::text').get()
+                    video_id_str = re.findall(r"var COVER_INFO = (.*?)\nvar COLUMN_INFO", script_content)
 
-            # 电视剧清晰度
-            video_info_url = 'http://vv.video.qq.com/getinfo?otype=json&appver=3.2.19.333&platform=4100201&defnpayver=1&defn=hd&vid' \
-                             '={}'.format(first_vid)
-            video_info_response = requests.get(url=video_info_url, headers=headers)
-            video_info = json.loads(video_info_response.content[len('QZOutputJson='):-1])
-            fi_list = video_info['fl']['fi']
-            definition_list = []
-            for fi in fi_list:
-                definition_list.append({
-                    'name': fi['name'],
-                    'cname': fi['cname'],
-                })
+            if video_id_str is not None and len(video_id_str) > 0:
+                url_prefix = self.get_url_prefix(url)
+                cover_info = json.loads(video_id_str[0])
+                video_description = cover_info['description']
+                video_pic_url = cover_info['new_pic_hz']
+                video_title = cover_info['title']
+                video_second_title = cover_info['second_title']
+                video_type = cover_info['type_name']
+                video_list = []
+                first_vid = cover_info['video_ids'][0]
+                for video_id in cover_info['video_ids']:
+                    video_list.append(url_prefix + "/" + video_id + '.html')
 
-            return {
-                'title': video_title,
-                'secondTitle': video_second_title,
-                'picUrl': video_pic_url,
-                'description': video_description,
-                'type': video_type,
-                'videos': video_list,
-                'definitions': definition_list
-            }
+                # 电视剧清晰度
+                video_info_url = 'http://vv.video.qq.com/getinfo?otype=json&appver=3.2.19.333&platform=4100201&defnpayver=1&defn=hd&vid' \
+                                 '={}'.format(first_vid)
+                video_info_response = requests.get(url=video_info_url, headers=headers)
+                video_info = json.loads(video_info_response.content[len('QZOutputJson='):-1])
+                fi_list = video_info['fl']['fi']
+                definition_list = []
+                for fi in fi_list:
+                    definition_list.append({
+                        'name': fi['name'],
+                        'cname': fi['cname'],
+                    })
+                tv_info = {
+                    'title': video_title,
+                    'secondTitle': video_second_title,
+                    'picUrl': video_pic_url,
+                    'description': video_description,
+                    'type': video_type,
+                    'videos': video_list,
+                    'definitions': definition_list
+                }
+                return tv_info
+            else:
+                return {}
         except:
             traceback.print_exc()
             return {}
@@ -206,16 +212,16 @@ class Tencent:
         ckey = self.get_ckey(vid)
         proxy_http_url = 'https://vd.l.qq.com/proxyhttp'
         data = {
-                    'buid': 'vinfoad',
-                    'vinfoparam': 'spsrt=1&charge=0&defaultfmt=auto&otype=ojson&guid=&flowid=&platform=10201&sdtfrom=v1010' \
-                                  '&defnpayver=1&appVer=3.5.57&host=v.qq.com&ehost=%s&refer=v.qq.com&sphttps=1&tm=%s&spwm=4' \
-                                  '&logintoken={"main_login":"%s","openid":"%s","appid":"%s","access_token":"%s","vuserid":"%s",' \
-                                  '"vusession":"%s"}&unid=2798fc67442611eb89cd6c92bf48bcb2&vid=%s&defn=fhd&fhdswitch=0&show1080p=1' \
-                                  '&isHLS=1&dtype=3&sphls=2&spgzip=1&dlver=2&drm=32&hdcp=0&spau=1&spaudio=15&defsrc=2&encryptVer=9' \
-                                  '.1&cKey=%s&fp2p=1&spadseg=3' % (
-                                      video_url, str(int(time.time())), self.main_login, self.vqq_appid, self.vqq_appid,
-                                      self.access_token, self.vqq_vuserid, self.vusession, vid, ckey.replace("\n", "&"))
-                }
+            'buid': 'vinfoad',
+            'vinfoparam': 'spsrt=1&charge=0&defaultfmt=auto&otype=ojson&guid=&flowid=&platform=10201&sdtfrom=v1010' \
+                          '&defnpayver=1&appVer=3.5.57&host=v.qq.com&ehost=%s&refer=v.qq.com&sphttps=1&tm=%s&spwm=4' \
+                          '&logintoken={"main_login":"%s","openid":"%s","appid":"%s","access_token":"%s","vuserid":"%s",' \
+                          '"vusession":"%s"}&unid=2798fc67442611eb89cd6c92bf48bcb2&vid=%s&defn=fhd&fhdswitch=0&show1080p=1' \
+                          '&isHLS=1&dtype=3&sphls=2&spgzip=1&dlver=2&drm=32&hdcp=0&spau=1&spaudio=15&defsrc=2&encryptVer=9' \
+                          '.1&cKey=%s&fp2p=1&spadseg=3' % (
+                              video_url, str(int(time.time())), self.main_login, self.vqq_appid, self.vqq_appid,
+                              self.access_token, self.vqq_vuserid, self.vusession, vid, ckey.replace("\n", "&"))
+        }
         proxy_http_headers = {
             "referer": "https://v.qq.com/",
             "user-agent": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -286,4 +292,3 @@ class Tencent:
                 ts_content = requests.get(url=url_prefix_list[0] + ts).content
                 video.write(ts_content)
             video.close()
-

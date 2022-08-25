@@ -4,7 +4,7 @@
     </div>
     <div style="float: left; height: 100%; " :style="{ width: 'calc(100% - ' + width + 'px)' }">
         <Navbar></Navbar>
-        <div style="padding: 20px; width: 100%">
+        <div style="padding: 20px; height: calc(100% - 90px)">
             <router-view/>
         </div>
     </div>

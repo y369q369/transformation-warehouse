@@ -8,8 +8,8 @@ video = Blueprint('video', __name__)
 tencent = Tencent()
 
 
-@video.route('/video/<string:source>/search/<string:videoType>')
-def search(source, videoType):
+@video.route('/video/<string:source>/searchVideo')
+def searchVideo(source):
     url = request.args['url']
     if Common.check_url(url) is not None:
         return tencent.get_video_info(url)
