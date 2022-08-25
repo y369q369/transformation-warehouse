@@ -88,7 +88,6 @@ class Tencent:
     def get_video_info(self, url):
         try:
             response = requests.get(url=url, headers=headers)
-            response.encoding = 'utf-8'
             selector = parsel.Selector(response.text)
 
             # 电视剧列表

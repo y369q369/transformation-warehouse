@@ -1,5 +1,5 @@
 <template>
-    <h1>优酷</h1>
+优酷
 </template>
 
 <script>
