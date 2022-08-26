@@ -1,6 +1,7 @@
 """"""
 import json
 import math
+import os
 import re
 import subprocess
 import time
@@ -8,7 +9,6 @@ import traceback
 
 import parsel
 import requests
-from tqdm import tqdm
 
 from backend.utils.CommonUtil import remove_file, create_direction, get_root_path
 from backend.video.downloadThread import download_video
@@ -23,11 +23,11 @@ headers = {
 }
 
 # 获取当前目录绝对路径
-root_path = get_root_path()
-tencent_cookie_path = "{}/video/tencent/tencent_cookie.txt".format(root_path)
-tencent_tx_path = "{}/video/tencent/tx.js".format(root_path)
-tencent_ckey_path = "{}/video/tencent/ckey.wasm".format(root_path)
-video_download_path = "{}/download/video/腾讯/".format(root_path)
+current_path = os.path.dirname(os.path.abspath(__file__))
+tencent_cookie_path = "{}/config/tencent_cookie.txt".format(current_path)
+tencent_tx_path = "{}/config/tx.js".format(current_path)
+tencent_ckey_path = "{}/config/ckey.wasm".format(current_path)
+video_download_path = "E:/video/"
 
 
 class Tencent:
@@ -37,7 +37,7 @@ class Tencent:
     vqq_appid = '101483052'
     vqq_vuserid = '424467340'
     # 使用前以下两项需替换
-    vusession = 'oOwXwaswACxJ-1I-pEx5DQ.N'
+    vusession = 'VFRf1PU6Y7mxudbS-eAJ4g.N'
     guid = '1112c408de16f0e777662cda1a4de96d'
 
     # 刷新权限认证：用于获取m3u8
@@ -85,7 +85,7 @@ class Tencent:
             cover_id = id_str
         return 'https://v.qq.com/x/cover/' + cover_id
 
-    # 获取电视剧每集视频的编号
+    # 根据url获取 每集视频的信息
     def get_video_info(self, url):
         try:
             response = requests.get(url=url, headers=headers)
@@ -197,7 +197,7 @@ class Tencent:
         for video_url in video_url_list:
             st = time.time()
             video_info = self.get_m3u8(video_url, definition)
-            print('{} 开始下载'.format(video_info['title']))
+            print('\n{} - {} 开始下载'.format(video_name, video_info['title']))
             video_path = tv_dir + '/' + video_info['title'] + '.mp4'
             remove_file(video_path)
             url_prefix_list = video_info['url_prefix_list']
@@ -210,8 +210,32 @@ class Tencent:
 
                 download_video(video_path, urls)
                 et = time.time()
-                print("{} 下载完成， 总耗时： {} s".format(video_info['title'], math.ceil(et - st)))
+                print("{} - {} 下载完成， 总耗时： {} s".format(video_name, video_info['title'], math.ceil(et - st)))
             else:
                 self.auth_refresh()
                 print("刷新权限后重新下载 {}".format(video_info['title']))
                 self.custom_download(video_name, definition, video_url_list)
+
+    # 全部剧集下载（注意：电影会下载各语言版本）
+    def full_download(self, video_url, definition='fhd'):
+        ast = time.time()
+        info = self.get_video_info(video_url)
+        video_name = info['title']
+        urls = []
+        for video in info['videos']:
+            urls.append(video['url'])
+        print('{} 所有视频信息获取完成，共 {} 集 准备下载'.format(video_name, len(urls)))
+        self.custom_download(video_name, definition, urls)
+        aet = time.time()
+        print('{} {} 集下载完成, 总耗时 {} s'.format(video_name, len(urls), math.ceil(aet - ast)))
+
+
+tencent = Tencent()
+
+if __name__ == '__main__':
+    video_url = 'https://v.qq.com/x/cover/mzc00200p29gosv/x0036gyn378.html'
+    video_name = '斗破苍穹 第4季'
+    # 1080p
+    definition = 'fhd'
+    # 全集下载
+    tencent.full_download(video_url)

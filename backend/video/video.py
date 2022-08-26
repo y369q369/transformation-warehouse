@@ -1,6 +1,8 @@
-import backend.utils.CommonUtil as Common
+import traceback
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request
+
+import backend.utils.CommonUtil as Common
 from backend.video.tencent import Tencent
 
 video = Blueprint('video', __name__)
@@ -17,15 +19,19 @@ def searchVideo(source):
         return {}
 
 
-@video.route('/video/<string:source>/download/<string:videoType>', methods=['POST'])
-def download(source, videoType):
-    name = request.json.get('name')
-    urls = request.json.get('urls')
-    tencent.tv_custom_download(name, urls)
-    return {'code': 0}
+@video.route('/video/<string:source>/download', methods=['POST'])
+def download(source):
+    try:
+        name = request.json.get('name')
+        definition = request.json.get('definition')
+        urls = request.json.get('urls')
+        tencent.custom_download(name, definition, urls)
+        return {'code': 200, 'msg': '下载成功'}
+    except Exception as e:
+        traceback.print_exc()
+        return {'code': 201, 'msg': e}
 
 
-# 小说本地存取路径
 video_root_direction = Common.get_root_path() + '/download/video/'
 tencent_direction = video_root_direction + '腾讯/'
 Common.create_direction(tencent_direction)
