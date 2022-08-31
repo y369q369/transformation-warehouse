@@ -24,9 +24,9 @@ headers = {
 
 # 获取当前目录绝对路径
 current_path = os.path.dirname(os.path.abspath(__file__))
-tencent_cookie_path = "{}/config/tencent_cookie.txt".format(current_path)
-tencent_tx_path = "{}/config/tx.js".format(current_path)
-tencent_ckey_path = "{}/config/ckey.wasm".format(current_path)
+tencent_cookie_path = "{}/tencent/tencent_cookie.txt".format(current_path)
+tencent_tx_path = "{}/tencent/tx.js".format(current_path)
+tencent_ckey_path = "{}/tencent/ckey.wasm".format(current_path)
 video_download_path = "E:/video/"
 
 
@@ -37,7 +37,7 @@ class Tencent:
     vqq_appid = '101483052'
     vqq_vuserid = '424467340'
     # 使用前以下两项需替换
-    vusession = 'VFRf1PU6Y7mxudbS-eAJ4g.N'
+    vusession = '0JdkPLMnQvb43l6VHx6lvQ.N'
     guid = '1112c408de16f0e777662cda1a4de96d'
 
     # 刷新权限认证：用于获取m3u8
@@ -233,9 +233,9 @@ class Tencent:
 tencent = Tencent()
 
 if __name__ == '__main__':
-    video_url = 'https://v.qq.com/x/cover/mzc00200p29gosv/x0036gyn378.html'
-    video_name = '斗破苍穹 第4季'
     # 1080p
     definition = 'fhd'
+
+    video_url = 'https://v.qq.com/x/cover/2bmnni22a5boa1o/v0022xhua94.html'
     # 全集下载
     tencent.full_download(video_url)

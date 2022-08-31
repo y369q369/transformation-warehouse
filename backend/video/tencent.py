@@ -37,7 +37,7 @@ class Tencent:
     vqq_appid = '101483052'
     vqq_vuserid = '424467340'
     # 使用前以下两项需替换
-    vusession = 'oOwXwaswACxJ-1I-pEx5DQ.N'
+    vusession = '0JdkPLMnQvb43l6VHx6lvQ.N'
     guid = '1112c408de16f0e777662cda1a4de96d'
 
     # 刷新权限认证：用于获取m3u8
@@ -75,6 +75,7 @@ class Tencent:
         with open(tencent_cookie_path, "w", encoding="utf-8") as f:
             f.write(set_cookie)
         self.vusession = info["vusession"]
+        print('刷新权限成功')
 
     # 获取剧集前缀
     def get_url_prefix(self, url):
@@ -196,6 +197,7 @@ class Tencent:
 
         for video_url in video_url_list:
             st = time.time()
+            self.auth_refresh()
             video_info = self.get_m3u8(video_url, definition)
             print('{} 开始下载'.format(video_info['title']))
             video_path = tv_dir + '/' + video_info['title'] + '.mp4'

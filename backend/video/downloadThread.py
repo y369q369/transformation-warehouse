@@ -19,13 +19,13 @@ class Download(threading.Thread):
         with open(self.tempFilePath, 'ab') as video:
             for downloadUrl in self.tempUrls:
                 try:
-                    res = requests.get(downloadUrl, timeout=3)
+                    res = requests.get(downloadUrl, timeout=10)
                     video.write(res.content)
                     time.sleep(0.1)
                 except:
                     print("{}   {} 下载异常".format(self.tempFilePath, downloadUrl))
                     traceback.print_exc()
-                    res = requests.get(downloadUrl, timeout=3)
+                    res = requests.get(downloadUrl, timeout=10)
                     video.write(res.content)
                     time.sleep(0.1)
             video.close()
