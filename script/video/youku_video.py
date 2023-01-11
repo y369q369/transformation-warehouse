@@ -5,6 +5,8 @@ import re
 import subprocess
 import time
 import urllib
+import base64
+from hashlib import md5
 
 import parsel
 import requests
@@ -30,6 +32,8 @@ class Youku:
     _m_h5_tk = ''
     _m_h5_tk_enc = ''
     token = ''
+    # 过期时间一年
+    cna = 'gAXaGUK+3w8CAXAUXTWZcdbb'
     appKey = 24679788
 
     def __init__(self):
@@ -55,7 +59,7 @@ class Youku:
     # 获取电视剧信息
     def get_video_info(self, url):
         header = {
-            'cookie': 'cna=gAXaGUK+3w8CAXAUXTWZcdbb'
+            'cookie': self.cna
         }
         response = requests.get(url=url, headers=header)
         selector = parsel.Selector(response.text)
@@ -144,6 +148,90 @@ class Youku:
         p = subprocess.run(text, shell=True, stdout=subprocess.PIPE)
         return p.stdout.decode("utf-8").replace('\n', '')
 
+    def youku_sign(self, t, data, token):
+        appKey = '24679788'  # 固定值
+        '''token值在cookie中'''
+        sign = token + '&' + t + '&' + appKey + '&' + data
+        md = md5()
+        md.update(sign.encode('UTF-8'))
+        sign = md.hexdigest()
+        return sign
+
+    def m3u8_url(self, video_id, videoId, show_id):
+        url = "https://acs.youku.com/h5/mtop.youku.play.ups.appinfo.get/1.1/"
+
+        # t = str(int(time.time() * 1000))
+        t = '1662362817046'
+        emb = base64.b64encode(("%swww.youku.com/" % videoId).encode('utf-8')).decode('utf-8')
+        # emb = ''
+        params_data = r'''{"steal_params":"{\"ccode\":\"0502\",\"client_ip\":\"192.168.1.1\",\"utid\":\"%s\",\"client_ts\":%s,\"version\":\"2.1.69\",\"ckey\":\"DIl58SLFxFNndSV1GFNnMQVYkx1PP5tKe1siZu/86PR1u/Wh1Ptd+WOZsHHWxysSfAOhNJpdVWsdVJNsfJ8Sxd8WKVvNfAS8aS8fAOzYARzPyPc3JvtnPHjTdKfESTdnuTW6ZPvk2pNDh4uFzotgdMEFkzQ5wZVXl2Pf1/Y6hLK0OnCNxBj3+nb0v72gZ6b0td+WOZsHHWxysSo/0y9D2K42SaB8Y/+aD2K42SaB8Y/+ahU+WOZsHcrxysooUeND\"}","biz_params":"{\"vid\":\"%s\",\"play_ability\":16782592,\"current_showid\":\"%s\",\"preferClarity\":99,\"extag\":\"EXT-X-PRIVINF\",\"master_m3u8\":1,\"media_type\":\"standard,subtitle\",\"app_ver\":\"2.1.69\",\"h265\":1}","ad_params":"{\"vs\":\"1.0\",\"pver\":\"2.1.69\",\"sver\":\"2.0\",\"site\":1,\"aw\":\"w\",\"fu\":0,\"d\":\"0\",\"bt\":\"pc\",\"os\":\"win\",\"osv\":\"10\",\"dq\":\"auto\",\"atm\":\"\",\"partnerid\":\"null\",\"wintype\":\"interior\",\"isvert\":0,\"vip\":1,\"emb\":\"%s\",\"p\":1,\"rst\":\"mp4\",\"needbf\":2,\"avs\":\"1.0\"}"}''' % (
+        self.cna, t[:10], video_id, show_id, emb)
+        sign = self.youku_sign(t, params_data, self.token)
+        # sign = self.youku_sign(t, params_data, 'f652db9443d8cea26d9642e417f1dd85')
+
+        params = {
+            "jsv": "2.5.8",
+            "appKey": "24679788",
+            "t": t,
+            "sign": sign,
+            "api": "mtop.youku.play.ups.appinfo.get",
+            "v": "1.1",
+            "timeout": "20000",
+            "YKPid": "20160317PLF000211",
+            "YKLoginRequest": "true",
+            "AntiFlood": "true",
+            "AntiCreep": "true",
+            "type": "jsonp",
+            "dataType": "jsonp",
+            "callback": "mtopjsonp1",
+            "data": params_data,
+        }
+
+        headers = {
+            "Accept": "*/*",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Accept-Language": "zh-CN,zh;q=0.9",
+            "Connection": "keep-alive",
+            "Cookie": '_m_h5_tk={}; _m_h5_tk_enc={};'.format(self._m_h5_tk, self._m_h5_tk_enc),
+            "Host": "acs.youku.com",
+            "Referer": "https://v.youku.com/v_show/id_XNTA1MTYwMzU0OA==.html?spm=a2h0c.8166622.PhoneSokuUgc_3.dscreenshot",
+            "Sec-Fetch-Dest": "script",
+            "Sec-Fetch-Mode": "no-cors",
+            "Sec-Fetch-Site": "same-site",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36",
+        }
+
+        resp = requests.get(url=url, params=params, headers=headers)
+        result = resp.text
+        # print(result)
+        data = json.loads(result[12:-1])
+        # print(data)
+        ret = data["ret"]
+        video_lists = []
+        if ret == ["SUCCESS::调用成功"]:
+            stream = data["data"]["data"]["stream"]
+            title = data["data"]["data"]["video"]["title"]
+            print("解析成功:")
+            for video in stream:
+                m3u8_url = video["m3u8_url"]
+                width = video["width"]
+                height = video["height"]
+                size = video["size"]
+                size = '{:.1f}'.format(float(size) / 1048576)
+                video_lists.append([size, width, height, title, m3u8_url])
+                print(f">>>  {title} 分辨率:{width}x{height} 视频大小:{size}M \tm3u8播放地址:{m3u8_url}")
+
+            # video_lists.sort(key=self.takeOne)
+            # for video_list in video_lists:
+            #     print(f">>>  {title} 分辨率:{video_list[1]}x{video_list[2]} 视频大小:{video_list[0]}M \tm3u8播放地址:{video_list[4]}")
+            # self.play(video_lists[-1][4])    # 选择播放列表最后一个视频（经过sort排序后，最后一个即为清晰度最高的一个）
+        elif ret == ["FAIL_SYS_ILLEGAL_ACCESS::非法请求"]:
+            print("请求参数错误")
+        elif ret == ["FAIL_SYS_TOKEN_EXOIRED::令牌过期"]:
+            print("Cookie过期")
+        else:
+            print(ret[0])
+
     def get_download_list(self):
         url = 'https://valipl10.cp31.ott.cibntv.net/65731D34B763671755732370E/03000900006299ACCC8BB780000000726D6C89-58A4-4C09-BEF6-3D5C3CBC1A73-11-54247245.m3u8?ccode=0502&duration=2721&expire=18000&psid=0234e02b87701ed20969e4b8acf2337941346&ups_client_netip=2471915a&ups_ts=1661926416&ups_userid=999830345&utid=gAXaGUK%2B3w8CAXAUXTWZcdbb&vid=XNTg1MjcwNjQwNA%3D%3D&vkey=Bd4e75e70fbed600cf783b52c26ee85ed&s=bbfdcd5525264a2eb8fd&iv=1&eo=0&t=8cb8d34768c724b&cug=1&fms=ce0126c0343c302c&tr=2706&le=958e1be54f19b23c5c4541e95c6e2412&ckt=5&m_onoff=0&rid=20000000CD33CFD64E89FBA1E4026417683056A402000000&type=mp4hd3v3&bc=2&dre=u151&si=573&dst=1&sm=1&operate_type=1&hotvt=1'
         res = requests.get(url)
@@ -165,13 +253,18 @@ if __name__ == '__main__':
     # print(info)
 
     # url = 'https://valipl10.cp31.ott.cibntv.net/67756D6080932713CFC02204E/030009000062A006366821FFC9AE75266AAAAD-0EE4-47D8-932E-336DBF7DB14D-00008.ts?ccode=0502&duration=1681&expire=18000&psid=eeb146567d3865bf92c12af8a551853d41346&ups_client_netip=2471915a&ups_ts=1661925477&ups_userid=999830345&utid=gAXaGUK%2B3w8CAXAUXTWZcdbb&vid=XNTE5ODA1NDkyNA%3D%3D&s=cc17b508962411de83b1&iv=1&eo=0&t=87417b3ca3e2430&cug=1&fms=309ca5c10457cbfe&tr=1681&le=2de1b7a525f51593c14dba097ca95e74&ckt=5&m_onoff=0&rid=2000000059F4F950185280A4CE955E72D76E72B402000000&type=mp4hd3v3&bc=2&dre=u151&si=573&dst=1&sm=1&operate_type=1&vkey=B71088f3031d4e53375245dfa23bd7e7e'
-    url = 'https://valipl10.cp31.ott.cibntv.net/65731D34B763671755732370E/03000900006299ACCC8BB780000000726D6C89-58A4-4C09-BEF6-3D5C3CBC1A73-11-54247245.m3u8?ccode=0502&duration=2721&expire=18000&psid=0234e02b87701ed20969e4b8acf2337941346&ups_client_netip=2471915a&ups_ts=1661926416&ups_userid=999830345&utid=gAXaGUK%2B3w8CAXAUXTWZcdbb&vid=XNTg1MjcwNjQwNA%3D%3D&vkey=Bd4e75e70fbed600cf783b52c26ee85ed&s=bbfdcd5525264a2eb8fd&iv=1&eo=0&t=8cb8d34768c724b&cug=1&fms=ce0126c0343c302c&tr=2706&le=958e1be54f19b23c5c4541e95c6e2412&ckt=5&m_onoff=0&rid=20000000CD33CFD64E89FBA1E4026417683056A402000000&type=mp4hd3v3&bc=2&dre=u151&si=573&dst=1&sm=1&operate_type=1&hotvt=1'
-    res = requests.get(url)
-    video_list = re.findall('\nhttp(.*)\n', res.content.decode("utf-8"))
-    for index in range(len(video_list)):
-        video_list[index] = 'http' + video_list[index]
-    print(video_list)
+    # url = 'https://valipl10.cp31.ott.cibntv.net/65731D34B763671755732370E/03000900006299ACCC8BB780000000726D6C89-58A4-4C09-BEF6-3D5C3CBC1A73-11-54247245.m3u8?ccode=0502&duration=2721&expire=18000&psid=0234e02b87701ed20969e4b8acf2337941346&ups_client_netip=2471915a&ups_ts=1661926416&ups_userid=999830345&utid=gAXaGUK%2B3w8CAXAUXTWZcdbb&vid=XNTg1MjcwNjQwNA%3D%3D&vkey=Bd4e75e70fbed600cf783b52c26ee85ed&s=bbfdcd5525264a2eb8fd&iv=1&eo=0&t=8cb8d34768c724b&cug=1&fms=ce0126c0343c302c&tr=2706&le=958e1be54f19b23c5c4541e95c6e2412&ckt=5&m_onoff=0&rid=20000000CD33CFD64E89FBA1E4026417683056A402000000&type=mp4hd3v3&bc=2&dre=u151&si=573&dst=1&sm=1&operate_type=1&hotvt=1'
+    # res = requests.get(url)
+    # video_list = re.findall('\nhttp(.*)\n', res.content.decode("utf-8"))
+    # for index in range(len(video_list)):
+    #     video_list[index] = 'http' + video_list[index]
+    # print(video_list)
     # with open('test.mp4', 'ab') as video:
     #     res = requests.get(url)
     #     video.write(res.content)
     # video.close()
+
+    # y.m3u8_url('XNTE5ODA1NDkyNA==', 'cc17b508962411de83b1')
+    # y.m3u8_url('XNTE5ODA1NDkyNA==', '1299513731', '55781')
+    # y.m3u8_url('XNTg4NDExMjUyOA==', '1471028132', '316409')
+    y.m3u8_url('XNTg4NDExNDE2NA==', '1471028541', '316409')

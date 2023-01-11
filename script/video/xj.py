@@ -65,21 +65,24 @@ def sync_video_info(pages):
                 video['tag'] = tag
                 video['author_str'] = author_str
                 insert_video.append(video)
-    if len(insert_video) > 0:
-        insert_sql = f"insert into video_info(id, title, author, cate_name, definition, tag, download_url, play_url, " \
-                     f"duration, score_num, year, area_name, mosaic, is_vip, download_flag) values "
-        for index, video in enumerate(insert_video):
-            mosaic = '无码' if video['mosaic'] == '2' else '有码'
-            if index > 0:
-                insert_sql += ', '
-            insert_sql += f"('{uuid.uuid1().hex}', '{video['title']}', '{video['author_str']}', '{video['catename']}', '{definition_dict[video['definition']]}', '{video['tag']}', " \
-                          f"'https://jpszdosq8an3q548x151.guoguoapps.com{video['down_url']}', 'https://jpszdosq8an3q548x151.guoguoapps.com{video['play_url']}', " \
-                          f"'{video['duration']}', '{video['scorenum']}', '{video['yearname']}', '{video['areaname']}', '{mosaic}', '{video['isvip']}', 0)"
-        cursor.execute(insert_sql)
-        db.commit()
-        print('实际插入' + str(cursor.rowcount) + '条')
-    else:
-        print('所有视频都已存档')
+                print(video['title'] + '  新增')
+            else:
+                print(video['title'] + '  已存在')
+    # if len(insert_video) > 0:
+    #     insert_sql = f"insert into video_info(id, title, author, cate_name, definition, tag, download_url, play_url, " \
+    #                  f"duration, score_num, year, area_name, mosaic, is_vip, download_flag) values "
+    #     for index, video in enumerate(insert_video):
+    #         mosaic = '无码' if video['mosaic'] == '2' else '有码'
+    #         if index > 0:
+    #             insert_sql += ', '
+    #         insert_sql += f"('{uuid.uuid1().hex}', '{video['title']}', '{video['author_str']}', '{video['catename']}', '{definition_dict[video['definition']]}', '{video['tag']}', " \
+    #                       f"'https://jpszdosq8an3q548x151.guoguoapps.com{video['down_url']}', 'https://jpszdosq8an3q548x151.guoguoapps.com{video['play_url']}', " \
+    #                       f"'{video['duration']}', '{video['scorenum']}', '{video['yearname']}', '{video['areaname']}', '{mosaic}', '{video['isvip']}', 0)"
+    #     cursor.execute(insert_sql)
+    #     db.commit()
+    #     print('实际插入' + str(cursor.rowcount) + '条')
+    # else:
+    #     print('所有视频都已存档')
 
 
 # 更新视频下载地址
@@ -107,4 +110,4 @@ def sync_download_url():
 
 
 if __name__ == '__main__':
-    sync_video_info(20)
+    sync_video_info(40)

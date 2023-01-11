@@ -37,7 +37,7 @@ class Tencent:
     vqq_appid = '101483052'
     vqq_vuserid = '424467340'
     # 使用前以下两项需替换
-    vusession = '0JdkPLMnQvb43l6VHx6lvQ.N'
+    vusession = 'enRUvE7j-UaKfOggISsVpg.N'
     guid = '1112c408de16f0e777662cda1a4de96d'
 
     # 刷新权限认证：用于获取m3u8
@@ -238,4 +238,10 @@ if __name__ == '__main__':
 
     video_url = 'https://v.qq.com/x/cover/2bmnni22a5boa1o/v0022xhua94.html'
     # 全集下载
-    tencent.full_download(video_url)
+    # tencent.full_download(video_url)
+    # 选集下载
+    tencent.custom_download('笑傲江湖', definition, ['https://v.qq.com/x/cover/q0t4yvm2i52eoub/d00119evq0x.html',
+                                                 'https://v.qq.com/x/cover/q0t4yvm2i52eoub/v00114mup66.html',
+                                                 'https://v.qq.com/x/cover/q0t4yvm2i52eoub/n001121fecj.html'])
+
+    # https://v.qq.com/x/cover/q0t4yvm2i52eoub/m0011yzet9u.html
