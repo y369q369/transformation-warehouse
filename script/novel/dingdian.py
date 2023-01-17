@@ -2,7 +2,6 @@
 import math
 import threading
 import time
-import traceback
 
 import parsel
 import requests
@@ -133,4 +132,5 @@ def download(info):
 if __name__ == '__main__':
     url = 'https://www.23wx.cc/du/14/14989/'
     info = catalog_list(url)
+    # print(info)
     download(info)
