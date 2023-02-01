@@ -50,7 +50,13 @@ class ChapterContent(threading.Thread):
                 print("\033[31;48m {}   {} 章节获取异常 \033[0m".format(chapter['name'], chapter['url']))
                 # traceback.print_exc()
                 res = requests.get(chapter['url'], timeout=20)
-                self.content_list.append(res.text)
+                # 解决中文符号乱码问题
+                res.encoding = 'gbk'
+                self.content_list.append({
+                    'name': chapter['name'],
+                    'text': res.text
+                })
+                print("{} 异常重新获取完成".format(chapter['name']))
 
 
 # 获取所有章节url
@@ -131,6 +137,6 @@ def download(info):
 
 
 if __name__ == '__main__':
-    url = 'http://www.ibiqu.org/book/2247/'
+    url = 'http://www.ibiqu.org/book/82590/'
     info = catalog_list(url)
     download(info)

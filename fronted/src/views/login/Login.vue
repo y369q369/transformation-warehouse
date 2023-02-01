@@ -38,8 +38,8 @@ import {localStore} from '@/stores/local'
 
 const router = useRouter()
 const param = reactive({
-    name: "admin",
-    password: "",
+  name: "admin",
+  password: "admin",
 });
 
 const loginInfo = ref('')
@@ -64,17 +64,18 @@ const submitForm = () => {
             axios.post('/api/user/login', param)
                 .then(function (response) {
                     if (response.code === 200) {
-                        axios.get('/api/user/userInfo', {
-                            params: {
-                                userName: param.name
-                            }
-                        }).then(function (response) {
-                            const local = localStore()
-                            local.storeUser(response.data)
-                            router.push('/dashboard')
-                        })
+                      axios.get('/api/user/userInfo', {
+                        params: {
+                          userName: param.name
+                        }
+                      }).then(function (user) {
+                        const local = localStore()
+                        local.storeUser(response)
+                        localStorage.setItem('token', user.token)
+                        router.push('/dashboard')
+                      })
                     } else {
-                        loginInfo.value = response.data.msg
+                      loginInfo.value = response.msg
                     }
                 })
         } else {
