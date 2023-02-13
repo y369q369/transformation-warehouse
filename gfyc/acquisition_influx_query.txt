@@ -1,0 +1,73 @@
+// 采集总数
+from(bucket: "{0}")
+  |> range(start: {1}, stop: {2})
+  |> group(columns: ["bucket"])
+  |> count()
+  |> map(fn: (r) => ({{ num: r._value }}))
+  |> yield(name: "v1")
+
+// 电表采集成功率 > 90%
+from(bucket: "{0}")
+  |> range(start: {1}, stop: {2})
+  |> group(columns: ["meter_id"])
+  |> count()
+  |> map(fn: (r) => ({{ num: r._value, meter_id: r.meter_id }}))
+  |> filter(fn: (r) => r.num > 86)
+  |> group(columns: ["bucket"])
+  |> count(column: "num")
+  |> yield(name: "v2")
+
+// 电表采集成功率  70% ~ 89%
+from(bucket: "{0}")
+  |> range(start: {1}, stop: {2})
+  |> group(columns: ["meter_id"])
+  |> count()
+  |> map(fn: (r) => ({{ num: r._value, meter_id: r.meter_id }}))
+  |> filter(fn: (r) => r.num > 67 and r.num < 87)
+  |> group(columns: ["bucket"])
+  |> count(column: "num")
+  |> yield(name: "v3")
+
+// 电表采集成功数量 > 24
+from(bucket: "{0}")
+  |> range(start: {1}, stop: {2})
+  |> group(columns: ["meter_id"])
+  |> count()
+  |> map(fn: (r) => ({{ num: r._value, meter_id: r.meter_id }}))
+  |> filter(fn: (r) => r.num > 24)
+  |> group(columns: ["bucket"])
+  |> count(column: "num")
+  |> yield(name: "v4")
+
+// 电表采集成功数量 > 9
+from(bucket: "{0}")
+  |> range(start: {1}, stop: {2})
+  |> group(columns: ["meter_id"])
+  |> count()
+  |> map(fn: (r) => ({{ num: r._value, meter_id: r.meter_id }}))
+  |> filter(fn: (r) => r.num > 9)
+  |> group(columns: ["bucket"])
+  |> count(column: "num")
+  |> yield(name: "v5")
+
+// 电表采集成功率 = 100%
+from(bucket: "{0}")
+  |> range(start: {1}, stop: {2})
+  |> group(columns: ["meter_id"])
+  |> count()
+  |> map(fn: (r) => ({{ num: r._value, meter_id: r.meter_id }}))
+  |> filter(fn: (r) => r.num == 96)
+  |> group(columns: ["bucket"])
+  |> count(column: "num")
+  |> yield(name: "v6")
+
+// 采集到数据的电表数
+from(bucket: "{0}")
+  |> range(start: {1}, stop: {2})
+  |> group(columns: ["meter_id"])
+  |> count()
+  |> group(columns: ["bucket"])
+  |> count()
+  |> map(fn: (r) => ({{ num: r._value }}))
+  |> yield(name: "v7")
+
