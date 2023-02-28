@@ -20,8 +20,8 @@ parser.add_argument('--countyCode', type=str, help='区县编号', default='3240
 parser.add_argument('--startDate', type=str, help='开始日期')
 parser.add_argument('--endDate', type=str, help='结束日期')
 
-start_time_str = '08:00:00'
-end_time_str = '17:00:00'
+start_time_str = '00:00:00'
+end_time_str = '23:59:59'
 
 county_code = ''
 # 档案映射
@@ -42,14 +42,24 @@ archives_power_data = {
     'platform': {},
 }
 
-client = influxdb_client.InfluxDBClient(url='http://192.168.110.130:8086/',
-                                        token='VsE9zz62qm_DZKB6eib-hTSk1Ml-e8uF82Sqdbe5xnUJwOKshHFZCdMaiMa7Fqx_KD2iKmWCjg2u6XHTABcaSA==',
-                                        org='gs',
+# client = influxdb_client.InfluxDBClient(url='http://192.168.110.130:8086/',
+#                                         token='VsE9zz62qm_DZKB6eib-hTSk1Ml-e8uF82Sqdbe5xnUJwOKshHFZCdMaiMa7Fqx_KD2iKmWCjg2u6XHTABcaSA==',
+#                                         org='gs',
+#                                         timeout=50_000)
+# query_api = client.query_api()
+#
+# conn = pymysql.connect(user='root', password='1qaz@WSX', host='127.0.0.1', database='gfyc')
+# cursor = conn.cursor()
+
+
+conn = pymysql.connect(user='root', password='123456789', host='172.16.130.188', database='gfyc')
+cursor = conn.cursor()
+
+client = influxdb_client.InfluxDBClient(url='http://172.16.130.205:8092/',
+                                        token='LRdIIW17oir2cDvCsrjZn1qvUOF5fFNwlqeqHGvg5LAv7pw-g_efZNbp7hhvV1aZwBecmMNgeE8dO9yPIPdLqA==',
+                                        org='nari',
                                         timeout=50_000)
 query_api = client.query_api()
-
-conn = pymysql.connect(user='root', password='1qaz@WSX', host='127.0.0.1', database='gfyc')
-cursor = conn.cursor()
 
 
 # 本地时间转utc时间

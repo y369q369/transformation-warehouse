@@ -6,14 +6,18 @@ import influxdb_client
 import pymysql
 import pytz
 
+'''
+    功能      ->    统计全省指定日期采集成功率
+'''
+
 # influxdb连接
-client = influxdb_client.InfluxDBClient(url='http://172.16.130.205:8092/',
-                                        token='LRdIIW17oir2cDvCsrjZn1qvUOF5fFNwlqeqHGvg5LAv7pw-g_efZNbp7hhvV1aZwBecmMNgeE8dO9yPIPdLqA==',
-                                        org='nari')
+client = influxdb_client.InfluxDBClient(url='http://192.168.110.130:8086/',
+                                        token='VsE9zz62qm_DZKB6eib-hTSk1Ml-e8uF82Sqdbe5xnUJwOKshHFZCdMaiMa7Fqx_KD2iKmWCjg2u6XHTABcaSA==',
+                                        org='gs',
+                                        timeout=50_000)
 query_api = client.query_api()
 
-# mysql连接
-conn = pymysql.connect(user='root', password='123456789', host='172.16.130.188', database='gfyc')
+conn = pymysql.connect(user='root', password='1qaz@WSX', host='127.0.0.1', database='gfyc')
 cursor = conn.cursor()
 
 date_str = '2023-02-06'
@@ -54,8 +58,8 @@ for county_code in county_code_result:
     print('查询县： {}'.format(county_code[0]))
     acquisition_influx_query = acquisition_influx_query_format.format(county_code[0], local_utc(date_str + ' 00:00:00'),
                                                                       local_utc(date_str + ' 23:59:00'))
-    # print(acquisition_influx_query)
-    num_result = query_api.query(org='nari', query=acquisition_influx_query)
+    print(acquisition_influx_query)
+    num_result = query_api.query(query=acquisition_influx_query)
     for item in num_result:
         for num_item in item.records:
             key = num_item['result']

@@ -29,14 +29,22 @@ date_list = []
 calculation_data = {}
 target_data = []
 
-client = influxdb_client.InfluxDBClient(url='http://192.168.110.130:8086/',
-                                        token='VsE9zz62qm_DZKB6eib-hTSk1Ml-e8uF82Sqdbe5xnUJwOKshHFZCdMaiMa7Fqx_KD2iKmWCjg2u6XHTABcaSA==',
-                                        org='gs',
-                                        timeout=50_000)
-query_api = client.query_api()
+# client = influxdb_client.InfluxDBClient(url='http://192.168.110.130:8086/',
+#                                         token='VsE9zz62qm_DZKB6eib-hTSk1Ml-e8uF82Sqdbe5xnUJwOKshHFZCdMaiMa7Fqx_KD2iKmWCjg2u6XHTABcaSA==',
+#                                         org='gs',
+#                                         timeout=50_000)
+# query_api = client.query_api()
+#
+# conn = pymysql.connect(user='root', password='1qaz@WSX', host='127.0.0.1', database='gfyc')
 
-conn = pymysql.connect(user='root', password='1qaz@WSX', host='127.0.0.1', database='gfyc')
+
+conn = pymysql.connect(user='root', password='123456789', host='172.16.130.188', database='gfyc')
 cursor = conn.cursor()
+
+client = influxdb_client.InfluxDBClient(url='http://172.16.130.205:8092/',
+                                        token='LRdIIW17oir2cDvCsrjZn1qvUOF5fFNwlqeqHGvg5LAv7pw-g_efZNbp7hhvV1aZwBecmMNgeE8dO9yPIPdLqA==',
+                                        org='nari')
+query_api = client.query_api()
 
 
 # 本地时间转utc时间
@@ -65,8 +73,8 @@ def get_forecast(field, id, county_code):
                        '    AND c.inst_cap > 0 \n' \
                        '    AND c.weather_grid_id > 0 \n' \
                        '    AND minute(b.time) = 0 \n' \
-                       '    GROUP BY b.time \n'.format(date_str, start_time_str, date_str, end_time_str, county_code,
-                                                       field, id)
+                       'GROUP BY b.time \n'.format(date_str, start_time_str, date_str, end_time_str, county_code,
+                                                   field, id)
         print('【预测值获取】\n' + forecast_sql)
         cursor.execute(forecast_sql)
         forecast_result = cursor.fetchall()
@@ -120,7 +128,7 @@ def get_actual(type, id_list, id_list_str, county_code_list):
                         local_utc(date_str + ' ' + end_time_str),
                         filter_str)
             print('【实际值获取】\n' + actual_query)
-            actual_result = query_api.query(org='gs', query=actual_query)
+            actual_result = query_api.query(query=actual_query)
             for item in actual_result:
                 for info in item.records:
                     time_str = datetime.datetime.strftime(info['_time'].astimezone(pytz.timezone('Asia/Shanghai')),
