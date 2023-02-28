@@ -2,7 +2,6 @@ import argparse
 import datetime
 import json
 import math
-import sys
 from decimal import *
 
 import influxdb_client
@@ -12,27 +11,35 @@ import openpyxl
 from openpyxl.styles import PatternFill, Font, Border, Side
 
 '''
-    功能      ->    多日导出多个表格,统计每日4个模型台区级光伏功率预测准确率
+    功能      ->    多日导出多个表格,统计每日4个模型区（区县级、馈线级、网格级、台区级、电表级）光伏功率预测准确率
 '''
 
-parser = argparse.ArgumentParser(description='多日导出单个表格,统计每日4个模型台区级光伏功率预测准确率')
+parser = argparse.ArgumentParser(description='统计每日光伏功率预测准确率，默认查询昨天')
 parser.add_argument('--countyCode', type=str, help='区县编号', default='3241106')
 parser.add_argument('--startDate', type=str, help='开始日期')
 parser.add_argument('--endDate', type=str, help='结束日期')
 
-start_time_str = '00:00:00'
-end_time_str = '23:59:59'
+start_time_str = '08:00:00'
+end_time_str = '17:00:00'
 
-county_code = ''
 # 档案映射
-platform_device_dict = {}
-device_dict = {}
-
+archives_dict = {
+    'county_line': {},
+    'line_platform': {},
+    'grid_platform': {},
+    'platform_device': {},
+    'device': {},
+}
 # 数据
+county_code = ''
 date_list = []
 weather_dict = {}
-platform_power_data = {}
-device_power_data = {}
+archives_power_data = {
+    'county': {},
+    'line': {},
+    'grid': {},
+    'platform': {},
+}
 
 conn = pymysql.connect(user='root', password='123456789', host='172.16.130.188', database='gfyc')
 cursor = conn.cursor()
@@ -54,8 +61,7 @@ def local_utc(datetime_str):
 
 # 初始化档案信息
 def init_archives_info():
-    global platform_device_dict
-    global device_dict
+    global archives_dict
     print('【区县编码】 ' + county_code + '\n')
     # 获取档案信息
     archives_sql = 'SELECT \n' \
@@ -82,20 +88,56 @@ def init_archives_info():
     archives_result = cursor.fetchall()
 
     for item in archives_result:
-        #  台区 - 电表 映射
-        if item[4] in platform_device_dict:
-            if item[6] not in platform_device_dict[item[4]]['child']:
-                platform_device_dict[item[4]]['child'].append(item[6])
-            platform_device_dict[item[4]]['inst_cap'] += float(item[9])
+        # 区县 - 馈线映射
+        if item[0] in archives_dict['county_line']:
+            if item[2] not in archives_dict['county_line'][item[0]]['child']:
+                archives_dict['county_line'][item[0]]['child'].append(item[2])
+            archives_dict['county_line'][item[0]]['inst_cap'] += float(item[9])
         else:
-            platform_device_dict[item[4]] = {
+            archives_dict['county_line'][item[0]] = {
+                'name': item[1],
+                'child': [item[2]],
+                'inst_cap': float(item[9])
+            }
+
+        # 馈线 - 台区
+        if item[2] in archives_dict['line_platform']:
+            if item[4] not in archives_dict['line_platform'][item[2]]['child']:
+                archives_dict['line_platform'][item[2]]['child'].append(item[4])
+            archives_dict['line_platform'][item[2]]['inst_cap'] += float(item[9])
+        else:
+            archives_dict['line_platform'][item[2]] = {
+                'name': item[3],
+                'child': [item[4]],
+                'inst_cap': float(item[9])
+            }
+
+        # 气象网格 - 台区 映射
+        if item[8] in archives_dict['grid_platform']:
+            if item[4] not in archives_dict['grid_platform'][item[8]]['child']:
+                archives_dict['grid_platform'][item[8]]['child'].append(item[4])
+            archives_dict['grid_platform'][item[8]]['inst_cap'] += float(item[9])
+        else:
+            archives_dict['grid_platform'][item[8]] = {
+                'name': item[8],
+                'child': [item[4]],
+                'inst_cap': float(item[9])
+            }
+
+        #  台区 - 电表 映射
+        if item[4] in archives_dict['platform_device']:
+            if item[6] not in archives_dict['platform_device'][item[4]]['child']:
+                archives_dict['platform_device'][item[4]]['child'].append(item[6])
+            archives_dict['platform_device'][item[4]]['inst_cap'] += float(item[9])
+        else:
+            archives_dict['platform_device'][item[4]] = {
                 'name': item[5],
                 'child': [item[6]],
                 'inst_cap': float(item[9])
             }
 
         # 电表信息
-        device_dict[item[6]] = {
+        archives_dict['device'][item[6]] = {
             'name': item[7],
             'inst_cap': float(item[9]),
             'per': item[10],
@@ -133,8 +175,8 @@ def get_weather():
 # 获取实际值
 def get_actual(date_str):
     print("【获取实际值】")
-    global device_power_data
-    device_power_data = {}
+    power = {}
+    archives_power_data['device'] = power
     actual_query = 'import "date"\n' \
                    'from(bucket: "{}")\n' \
                    '  |> range(start: {}, stop: {})\n' \
@@ -145,11 +187,11 @@ def get_actual(date_str):
     actual_result = query_api.query(query=actual_query)
     for item in actual_result:
         for info in item.records:
-            if info['meter_id'] not in device_power_data:
-                device_power_data[info['meter_id']] = {}
+            if info['meter_id'] not in power:
+                power[info['meter_id']] = {}
             time_str = datetime.datetime.strftime(info['_time'].astimezone(pytz.timezone('Asia/Shanghai')),
                                                   '%Y-%m-%d %H:%M')
-            device_power_data[info['meter_id']][time_str] = {
+            power[info['meter_id']][time_str] = {
                 'actual': info['_value'] * 1000
             }
 
@@ -173,88 +215,103 @@ def get_forecast(date_str):
         cursor.execute(forecast_sql)
         forecast_result = cursor.fetchall()
         for item in forecast_result:
-            if item[0] in device_power_data:
+            if item[0] in archives_power_data['device']:
                 time_str = datetime.datetime.strftime(item[1], '%Y-%m-%d %H:%M')
-                if time_str in device_power_data[item[0]]:
-                    device_power_data[item[0]][time_str]['forecast' + str(i)] = item[2]
+                if time_str in archives_power_data['device'][item[0]]:
+                    archives_power_data['device'][item[0]][time_str]['forecast' + str(i)] = item[2]
 
 
 # 合并 区县、馈线、网格、台区 数据
 def merge_data():
-    global platform_power_data
-    platform_power_data = {}
+    global archives_power_data
+    archives_power_data['county'] = {}
+    archives_power_data['line'] = {}
+    archives_power_data['grid'] = {}
+    archives_power_data['platform'] = {}
 
-    for self in platform_device_dict:
-        for child_id in platform_device_dict[self]['child']:
-            if child_id in device_power_data:
-                if self not in platform_power_data:
-                    platform_power_data[self] = {}
-                for time_str in device_power_data[child_id]:
-                    if time_str not in platform_power_data[self]:
-                        platform_power_data[self][time_str] = {
-                            'actual': device_power_data[child_id][time_str]['actual']
-                        }
-                        for i in range(1, 5):
-                            platform_power_data[self][time_str]['forecast' + str(i)] = \
-                            device_power_data[child_id][time_str]['forecast' + str(i)]
-                    else:
-                        for i in range(1, 5):
-                            platform_power_data[self][time_str]['forecast' + str(i)] += \
-                            device_power_data[child_id][time_str]['forecast' + str(i)]
-                        platform_power_data[self][time_str]['actual'] += device_power_data[child_id][time_str]['actual']
-    with open('功率数据.json', 'w', encoding='utf-8') as target_file:
-        json.dump(platform_power_data, target_file, indent=4, ensure_ascii=False)
-        target_file.close()
-    with open('档案数据.json', 'w', encoding='utf-8') as target_file:
-        json.dump(platform_device_dict, target_file, indent=4, ensure_ascii=False)
-        target_file.close()
+    field = ['platform_device', 'grid_platform', 'line_platform', 'county_line']
+    power_field = ['platform', 'grid', 'line', 'county']
+    base_power_field = ['device', 'platform', 'platform', 'line']
+
+    for i in range(len(field)):
+        for self in archives_dict[field[i]]:
+            power = archives_power_data[power_field[i]]
+            base_power = archives_power_data[base_power_field[i]]
+
+            power[self] = {}
+            for child_id in archives_dict[field[i]][self]['child']:
+                if child_id in base_power:
+                    for time_str in base_power[child_id]:
+                        if time_str not in power[self]:
+                            power[self][time_str] = {
+                                'actual': base_power[child_id][time_str]['actual']
+                            }
+                            for j in range(1, 5):
+                                power[self][time_str]['forecast' + str(j)] = base_power[child_id][time_str][
+                                    'forecast' + str(j)]
+                        else:
+                            power[self][time_str]['actual'] += base_power[child_id][time_str]['actual']
+                            for j in range(1, 5):
+                                power[self][time_str]['forecast' + str(j)] += base_power[child_id][time_str][
+                                    'forecast' + str(j)]
+    # with open('功率数据.json', 'w', encoding='utf-8') as target_file:
+    #     json.dump(archives_power_data, target_file, indent=4, ensure_ascii=False)
+    #     target_file.close()
+    # with open('档案数据.json', 'w', encoding='utf-8') as target_file:
+    #     json.dump(archives_dict, target_file, indent=4, ensure_ascii=False)
+    #     target_file.close()
 
 
 # 计算准确率
 def calculation_percent(date_str):
     target_data = []
-    sum_rate = {
-        '1': Decimal(0),
-        '2': Decimal(0),
-        '3': Decimal(0),
-        '4': Decimal(0)
-    }
-    for field_id in platform_power_data:
-        if field_id in platform_device_dict:
-            power_square = {
-                '1': Decimal(0),
-                '2': Decimal(0),
-                '3': Decimal(0),
-                '4': Decimal(0),
-            }
-            num = 0
-            for time_str in platform_power_data[field_id]:
-                power = platform_power_data[field_id][time_str]
-                for i in range(1, 5):
-                    temp_rate = (Decimal(power['actual']) - Decimal(power['forecast' + str(i)])) / (
-                            Decimal(platform_device_dict[field_id]['inst_cap']) * 1000)
-                    power_square[str(i)] = temp_rate ** 2 + power_square[str(i)]
-                num += 1
-            if num > 0:
-                cell_data = [field_id, platform_device_dict[field_id]['name'],
-                             platform_device_dict[field_id]['inst_cap'], num]
-                for i in range(1, 5):
-                    rate = 1 - math.sqrt(power_square[str(i)] / Decimal(num))
-                    cell_data.append(round(rate * 100, 2))
-                    sum_rate[str(i)] = sum_rate[str(i)] + Decimal(rate)
-                if cell_data[4] < 0:
-                    cell_data.append(1)
-                else:
-                    cell_data.append(0)
-                target_data.append(cell_data)
-    if len(target_data) > 0:
-        target_data.insert(0, ['平均值', weather_dict[date_str], '', '',
-                               round(float(sum_rate['1']) / len(target_data) * 100, 2),
-                               round(float(sum_rate['2']) / len(target_data) * 100, 2),
-                               round(float(sum_rate['3']) / len(target_data) * 100, 2),
-                               round(float(sum_rate['4']) / len(target_data) * 100, 2)])
+    power_field = ['county', 'line', 'grid', 'platform', 'device']
+    info_field = ['county_line', 'line_platform', 'grid_platform', 'platform_device', 'device']
+    for i in range(len(power_field)):
+        field_data = []
+        sum_rate = {
+            '1': Decimal(0),
+            '2': Decimal(0),
+            '3': Decimal(0),
+            '4': Decimal(0)
+        }
+        for field_id in archives_power_data[power_field[i]]:
+            if field_id in archives_dict[info_field[i]]:
+                power_square = {
+                    '1': Decimal(0),
+                    '2': Decimal(0),
+                    '3': Decimal(0),
+                    '4': Decimal(0),
+                }
+                num = 0
+                for time_str in archives_power_data[power_field[i]][field_id]:
+                    power = archives_power_data[power_field[i]][field_id][time_str]
+                    for j in range(1, 5):
+                        temp_rate = (Decimal(power['actual']) - Decimal(power['forecast' + str(j)])) / (
+                                Decimal(archives_dict[info_field[i]][field_id]['inst_cap']) * 1000)
+                        power_square[str(j)] = temp_rate ** 2 + power_square[str(j)]
+                    num += 1
+                if num > 0:
+                    cell_data = [field_id, archives_dict[info_field[i]][field_id]['name'],
+                                 archives_dict[info_field[i]][field_id]['inst_cap'], num]
+                    for j in range(1, 5):
+                        rate = 1 - math.sqrt(power_square[str(j)] / Decimal(num))
+                        cell_data.append(round(rate * 100, 2))
+                        sum_rate[str(j)] = sum_rate[str(j)] + Decimal(rate)
+                    if cell_data[4] < 0:
+                        cell_data.append(1)
+                    else:
+                        cell_data.append(0)
+                    field_data.append(cell_data)
+        if len(field_data) > 0:
+            field_data.insert(0, ['平均值', '', '', '',
+                                  round(float(sum_rate['1']) / len(field_data) * 100, 2),
+                                  round(float(sum_rate['2']) / len(field_data) * 100, 2),
+                                  round(float(sum_rate['3']) / len(field_data) * 100, 2),
+                                  round(float(sum_rate['4']) / len(field_data) * 100, 2)])
+        target_data.append(field_data)
 
-    target_file = '预测准确率({}).xlsx'.format(date_str)
+    target_file = '预测准确率({})({}).xlsx'.format(date_str, weather_dict[date_str])
     export_data(target_data, target_file)
     print("【导出完成】 " + date_str + "\n\n")
 
@@ -262,7 +319,7 @@ def calculation_percent(date_str):
 # 表头
 table_header = ['编号', '名称', '开机容量', '计算点数', '模型1准确率（%）', '模型2准确率（%）', '模型3准确率（%）', '模型4准确率（%）', '是否异常(0:正常，1:异常)']
 # 表空间
-sheet_list = ['台区']
+sheet_list = ['区县', '馈线', '网格', '台区', '电表']
 
 
 # 数据导出到表格
@@ -270,10 +327,10 @@ def export_data(target_data, target_file):
     book = openpyxl.Workbook()
     for i in range(0, len(sheet_list)):
         sheet = book.create_sheet(sheet_list[i], i)
-        target_data.insert(0, table_header)
+        target_data[i].insert(0, table_header)
         # 写数据
         row_num = 1
-        for row_data in target_data:
+        for row_data in target_data[i]:
             col_num = 1
             for single_data in row_data:
                 sheet.cell(row_num, col_num, single_data)
