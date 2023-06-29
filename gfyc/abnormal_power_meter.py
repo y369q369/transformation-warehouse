@@ -20,8 +20,8 @@ client = influxdb_client.InfluxDBClient(url='http://172.16.130.205:8092/',
 query_api = client.query_api()
 write_api = client.write_api(write_options=SYNCHRONOUS)
 
-start_time = '2023-01-01 00:00:00'
-end_time = '2023-04-23 23:59:59'
+start_time = '2023-03-01 00:00:00'
+end_time = '2023-05-09 23:59:59'
 county_code_list = []
 abnormal_power_list = []
 
@@ -51,7 +51,7 @@ def get_abnormal_power_record():
     for county_code in county_code_list:
         abnormal_power_query = 'from(bucket: "{}")\n' \
                                '  |> range(start: {}, stop: {})\n' \
-                               '  |> filter(fn:(r) => r["_value"] > 10000) \n' \
+                               '  |> filter(fn:(r) => r["_value"] > 10000 or r["_value"] < -10) \n' \
             .format(county_code, local_utc(start_time), local_utc(end_time))
         print(abnormal_power_query + '\n')
         abnormal_power_result = query_api.query(query=abnormal_power_query)

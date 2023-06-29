@@ -5,56 +5,30 @@ import time
 
 import parsel
 import requests
+import urllib3
+from fake_useragent import UserAgent
+
+from script.utils.novel_util import split_process_download, save_file
 
 '''
-    目标网址   ->    定点小说网 ：https://www.23wx.cc/
+    目标网址   ->    顶点小说网 ：https://www.23wx.cc/
     功能      ->    根据 地址 下载小说
     备用：            https://www.23usp.com/
                      https://www.dingdianorg.com/
 '''
 
-headers = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
-                  'Chrome/96.0.4664.45 Safari/537.36',
-}
+headers = {'User-Agent': UserAgent().random}
 
-video_download_path = "E:/ebook/"
+video_download_path = "E:/ebook/novel/special2/"
 
-threadNum = 5
-
-
-class ChapterContent(threading.Thread):
-    """
-        获取小说章节内容 线程
-    """
-
-    def __init__(self, chapter_list, content_list):
-        threading.Thread.__init__(self)
-        self.chapter_list = chapter_list
-        self.content_list = content_list
-
-    def run(self):
-        for chapter in self.chapter_list:
-            print("{} 开始获取".format(chapter['name']))
-            try:
-                res = requests.get(chapter['url'])
-                # 解决中文符号乱码问题
-                res.encoding = 'gbk'
-                self.content_list.append({
-                    'name': chapter['name'],
-                    'text': res.text
-                })
-            except:
-                print("\033[31;48m {}   {} 章节获取异常 \033[0m".format(chapter['name'], chapter['url']))
-                # traceback.print_exc()
-                res = requests.get(chapter['url'], timeout=20)
-                self.content_list.append(res.text)
+encodings = 'gbk'
 
 
 # 获取所有章节url
 def catalog_list(url):
-    response = requests.get(url=url, headers=headers)
-    response.encoding = response.apparent_encoding
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    response = requests.get(url=url, headers=headers, verify=False)
+    response.encoding = encodings
     selector = parsel.Selector(response.text)
     info_title = selector.css('#info h1::text').get()
     author = selector.css('#info p::text').get().replace('作    者：', '')
@@ -77,60 +51,31 @@ def catalog_list(url):
     return novel
 
 
-# 获取每章节内容
-def download(info):
+def download_one(url):
     st = time.time()
-    chapter_list = info['chapter_list']
-    # chapter_list = info['chapter_list'][0:40]
+    info = catalog_list(url)
 
-    # 拆分线程获取小说内容
-    piece_size = len(chapter_list) // threadNum
-    threads = []
-    content_list = []
+    content_list = split_process_download(5, info['chapter_list'][:20], encodings)
 
-    for i in range(threadNum):
-        if i == threadNum - 1:
-            temp_chapter_list = chapter_list[i * piece_size:]
-        else:
-            temp_chapter_list = chapter_list[i * piece_size:(i + 1) * piece_size]
-        temp_content_list = []
-        content_list.append(temp_content_list)
-        thread = ChapterContent(temp_chapter_list, temp_content_list)
-        threads.append(thread)
-        thread.start()
-    # 等待所有线程完成
-    for t in threads:
-        t.join()
+    # 整理内容
+    novel_detail_list = []
+    for chapter in content_list:
+        selector = parsel.Selector(chapter['text'])
 
-    # 保存文件
-    file = video_download_path + info['title'] + '.txt'
-    with open(file, 'w', encoding='utf-8') as novel:
-        book_info = "{} \n\n\n\n".format(info['title'])
-        novel.write(book_info)
-        novel.close()
+        detail = chapter['name'].replace('‘', '').replace('’', '') + '\n\n'
+        context_list = selector.css('#content::text').getall()
+        for content in context_list:
+            if content != '\r\n':
+                detail += '    ' + content.lstrip().replace('\r\n', '') + '\n\n'
+        detail += '\n\n'
+        novel_detail_list.append(detail)
 
-    # 所有内容输出到文件中
-    for thread_content_list in content_list:
-        for chapter_content in thread_content_list:
-            selector = parsel.Selector(chapter_content['text'])
+    save_file(video_download_path, info['title'], novel_detail_list)
 
-            detail = chapter_content['name'].replace('‘', '').replace('’', '') + '\n\n'
-            context_list = selector.css('#content::text').getall()
-            for content in context_list:
-                if content != '\r\n':
-                    detail += '    ' + content.lstrip().replace('\r\n', '') + '\n\n'
-
-            detail += '\n\n'
-
-            with open(file, 'a', encoding='utf-8') as novel:
-                novel.write(detail)
-                novel.close()
     et = time.time()
     print("\033[35;48m \n{} 下载完成， 总耗时： {} s \033[0m".format(info['title'], math.ceil(et - st)))
 
 
 if __name__ == '__main__':
-    url = 'https://www.23wx.cc/du/14/14989/'
-    info = catalog_list(url)
-    # print(info)
-    download(info)
+    url = 'https://www.23dd.cc/du/0/21/'
+    download_one(url)
