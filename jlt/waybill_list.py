@@ -1,6 +1,7 @@
 """"""
 import json
 import requests
+import csv
 
 '''
     目标网址   ->    运单上报 ：https://bs.jilutong.com.cn/report/waybillreport
@@ -8,7 +9,8 @@ import requests
 '''
 
 headers = {
-    'authorization': 'Bearer eyJhbGciOiJIUzUxMiJ9.eyJsb2dpbl91c2VyX2tleSI6IjcxYWUyOTljLWQ5MDItNDQyMy1hYmQ4LWJmZjM0N2IwZDFjZiJ9.IW0u0rR16npI7HvQrsZUHJHZ3B4iMOzmLpbESfYmXpbfSW0UqWDT0pGQgEtmZCnqpW4yXf718zdNcLzUEx2Wbw'}
+    'authorization': 'Bearer eyJhbGciOiJIUzUxMiJ9.eyJsb2dpbl91c2VyX2tleSI6IjZlMDEwNzc2LWY4ZTYtNGY3MC1iOWFmLTllMGFiZWNkMGJkMyJ9.fvCXiiXmSPgHxEa8XBUjF1yckdEM5u7Njd1En3xjkI4TAZEFy1L8RCb_nq_pkD8rQ9AJJXXnRuuihtWeae0FTw'
+}
 encodings = 'gbk'
 
 
@@ -19,6 +21,7 @@ def waybill_list(param):
     url = "https://bs.jilutong.com.cn/prod-api/tms/waybill/list"
     print('获取订单列表：页码 ' + str(param['pageNum']))
     response = requests.post(url=url, json=param, headers=headers)
+    response.encoding = encodings
     data = json.loads(response.content)
     waybill_data = []
     if data['code'] == 200:
@@ -33,6 +36,7 @@ def waybill_list(param):
             param['pageNum'] = param['pageNum'] + 1
             print('获取订单列表：页码 ' + str(param['pageNum']))
             response = requests.post(url=url, json=param, headers=headers)
+            response.encoding = encodings
             data2 = json.loads(response.content)
             if data2['code'] == 200:
                 temp_list2 = data2['rows']
@@ -47,6 +51,7 @@ def waybill_location(waybill):
         'waybillId': waybill['waybillId']
     }
     response = requests.get(url=url, params=params, headers=headers)
+    response.encoding = encodings
     data = json.loads(response.content)
     if data['code'] == 200:
         waybill['gpsTrackList'] = [
@@ -57,11 +62,44 @@ def waybill_location(waybill):
             data['data']['trackList']]
 
 
-# 导出为none转成"
-def default_for_none(obj):
-    if isinstance(obj, type(None)):
-        return ""
-    raise TypeError("Not serializable")
+# 将json转成csv文件
+def json2csv(data):
+    result_order = []
+    result_vehicle = []
+    result_driver = []
+    result_order.append(['订单编号', '建单人', '托运方', '收货人', '司机姓名', '司机手机号', '车牌号', '发运地', '收货地', '行驶里程(公里)', '预计时间（分钟）', '货物', '重量（KG）', '装货吨数', '卸货吨数', '建单时间', '发货时间', '到达时间', '支付时间', '应付', '应收', '服务费', '预付', '押金'])
+    result_vehicle.append(['订单编号', '建单人', '托运方', '收货人', '司机姓名', '司机手机号', '车牌号', '发运地', '收货地', '行驶里程(公里)', '预计时间（分钟）', '货物', '重量（KG）', '装货吨数', '卸货吨数', '建单时间', '发货时间', '到达时间', '支付时间', '应付', '应收', '服务费', '预付', '押金', '精度-车辆轨迹点', '纬度-车辆轨迹点', '速度-车辆轨迹点', '方向-车辆轨迹点', '定位时间-车辆轨迹点'])
+    result_driver.append(['订单编号', '建单人', '托运方', '收货人', '司机姓名', '司机手机号', '车牌号', '发运地', '收货地', '行驶里程(公里)', '预计时间（分钟）', '货物', '重量（KG）', '装货吨数', '卸货吨数', '建单时间', '发货时间', '到达时间', '支付时间', '应付', '应收', '服务费', '预付', '押金', '精度-司机轨迹点', '纬度-司机轨迹点', '定位时间-司机轨迹点'])
+    for item in data:
+        order = [item['waybillSn'], item['partyaName'], item['updateBy'], item['thrCompany'], item['driverName'], item['driverPhone'], item['carNo'], item['startCity'], item['endCity'], item['distance'], item['duration'], item['goodsName'], item['goodsWeight'], item['sendWeight'], item['loadWeight'], item['addTime'], item['sendTime'], item['arrivedTime'], item['payTime'], item['freightCharge'], item['acctualAmount'], '0.00', 0, 0]
+        for vehicle in item['trackList']:
+            temp = [vehicle['lng'], vehicle['lat'], vehicle['spd'], vehicle['drc'], vehicle['addTime']]
+            order_vehicle = []
+            order_vehicle.extend(order)
+            order_vehicle.extend(temp)
+            result_vehicle.append(order_vehicle)
+        for driver in item['gpsTrackList']:
+            temp = [driver['longitude'], driver['latitude'], driver['addTime']]
+            order_driver = []
+            order_driver.extend(order)
+            order_driver.extend(temp)
+            result_driver.append(order_driver)
+        result_order.append(order)
+    with open('上报订单.csv', 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        for row in result_order:
+            writer.writerow(row)
+        csvfile.close()
+    with open('上报订单-司机轨迹点.csv', 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        for row in result_driver:
+            writer.writerow(row)
+        csvfile.close()
+    with open('上报订单-车辆轨迹点.csv', 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        for row in result_vehicle:
+            writer.writerow(row)
+        csvfile.close()
 
 
 if __name__ == '__main__':
@@ -75,6 +113,12 @@ if __name__ == '__main__':
         waybill_location(waybill)
     with open('上报订单.json', 'w') as json_file:
         json.dump(waybill_data, json_file)
+        json_file.close()
+
+    # with open('上报订单.json', 'r', encoding='utf-8') as json_file:
+    #     data = json.load(json_file)
+    #     json_file.close()
+    # json2csv(data)
 
     # waybill = {
     #     'waybillId': '10ad9c5606c5470db59ad179d0362a26'
